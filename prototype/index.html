@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用药记 · 自然活力版原型 V2.0</title>
+<style>
+/* ============================================================
+   设计语言：自然活力（Natural Vitality）
+   奶油大地色底 · 苔藓绿主色 · 陶土橙强调 · 蜂蜜黄点缀
+   大圆角 + 胶囊形状 + 植物成长游戏化
+============================================================ */
+:root{
+  --bg:#F6F1E7;            /* 奶油 */
+  --bg2:#EFE7D8;           /* 深奶油 */
+  --card:#FFFDF8;          /* 暖白卡片 */
+  --ink:#3E3A33;           /* 深棕墨 */
+  --sub:#8A8378;           /* 暖灰 */
+  --line:#E7DFD0;          /* 暖分割线 */
+  --pri:#5F8D4E;           /* 苔藓绿 */
+  --pri-d:#4C7340;
+  --pri-l:#E4EEDA;
+  --acc:#E07A5F;           /* 陶土橙 */
+  --acc-l:#FBEAE3;
+  --honey:#F2CC8F;         /* 蜂蜜 */
+  --honey-d:#DDA54F;
+  --bad:#D4654F;           /* 暖红 */
+  --bad-l:#F9E4DF;
+  --shadow:0 8px 24px rgba(93,80,60,.09);
+  --shadow-s:0 3px 10px rgba(93,80,60,.08);
+  --r:22px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+  background:var(--bg); color:var(--ink); min-height:100vh; padding:24px 16px 60px;
+  background-image:
+    radial-gradient(420px 300px at 8% 4%, rgba(242,204,143,.28), transparent 70%),
+    radial-gradient(520px 380px at 95% 12%, rgba(95,141,78,.14), transparent 70%),
+    radial-gradient(400px 400px at 50% 105%, rgba(224,122,95,.10), transparent 70%);
+}
+.doc-head{max-width:1200px;margin:0 auto 22px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.doc-head h1{font-size:22px;letter-spacing:.5px}
+.doc-head h1 small{font-size:12px;color:var(--sub);font-weight:400;margin-left:10px}
+.doc-head .legend{display:flex;gap:14px;font-size:12px;color:var(--sub);flex-wrap:wrap}
+.doc-head .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.stage{max-width:1200px;margin:0 auto;display:flex;gap:34px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+
+/* ============ 手机外框 ============ */
+.phone{width:378px;flex:0 0 378px;background:#3E3A33;border-radius:50px;padding:11px;box-shadow:0 30px 60px rgba(62,58,51,.30)}
+.screen{position:relative;width:100%;height:768px;background:var(--bg);border-radius:40px;overflow:hidden}
+.screen::before{content:"";position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(242,204,143,.35),transparent 70%);top:-120px;right:-100px;z-index:0;pointer-events:none}
+.notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:108px;height:25px;background:#3E3A33;border-radius:20px;z-index:60}
+.statusbar{position:relative;z-index:55;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font-size:13px;font-weight:700}
+.statusbar .sicons{font-size:11px;letter-spacing:1px}
+
+.appbar{padding:6px 20px 10px;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2}
+.appbar .t{font-size:24px;font-weight:800;letter-spacing:.5px}
+.appbar .r{font-size:12px;color:var(--sub);font-weight:600}
+.page{position:absolute;inset:44px 0 0 0;padding-bottom:88px;overflow-y:auto;display:none;scrollbar-width:none;z-index:1}
+.page::-webkit-scrollbar{display:none}
+.page.active{display:block}
+
+.tabbar{position:absolute;left:10px;right:10px;bottom:10px;height:66px;background:rgba(255,253,248,.94);backdrop-filter:blur(10px);border-radius:26px;display:flex;z-index:50;box-shadow:0 8px 24px rgba(93,80,60,.14);border:1px solid rgba(231,223,208,.7)}
+.tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--sub);cursor:pointer;border:none;background:none;border-radius:20px;font-weight:600}
+.tabbar .tab .ic{font-size:19px;line-height:1;transition:transform .2s}
+.tabbar .tab.on{color:var(--pri-d);font-weight:800}
+.tabbar .tab.on .ic{transform:translateY(-2px) scale(1.12)}
+.tabbar.hide{display:none}
+
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow)}
+.sec-t{font-size:13px;font-weight:800;color:var(--sub);margin:18px 6px 9px;letter-spacing:1px}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:10px;background:var(--pri-l);color:var(--pri-d);font-weight:700}
+
+/* ============ 按钮 ============ */
+.btn{border:none;border-radius:99px;padding:10px 18px;font-size:12.5px;font-weight:800;cursor:pointer;transition:transform .12s}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(.9)}100%{transform:scale(1)}}
+.btn:active{animation:pop .25s}
+.btn-p{background:var(--pri);color:#fff;box-shadow:0 4px 12px rgba(95,141,78,.35)}
+.btn-g{background:var(--bg2);color:var(--sub)}
+.btn-acc{background:var(--acc);color:#fff;box-shadow:0 4px 12px rgba(224,122,95,.35)}
+
+/* ============ 今日页 · 植物成长 Hero ============ */
+.hero{margin:2px 16px 0;padding:18px 16px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(95,141,78,.12),transparent 70%);bottom:-70px;right:-40px}
+.hero .row{display:flex;align-items:center;gap:16px;position:relative;z-index:2}
+.plant{width:72px;height:72px;flex:0 0 72px;border-radius:50%;background:linear-gradient(160deg,#EDF4E4,#DCE9CC);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:inset 0 -4px 10px rgba(95,141,78,.15)}
+@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg)}}
+.plant span{display:inline-block;animation:sway 3.2s ease-in-out infinite;transform-origin:bottom center}
+.hero .hi{flex:1}
+.hero .pname{font-size:12px;font-weight:800;color:var(--pri-d);letter-spacing:1px}
+.hero .ptitle{font-size:17px;font-weight:800;margin-top:3px}
+.hero .psub{font-size:11px;color:var(--sub);margin-top:4px;line-height:1.5}
+.hero .bar{margin-top:10px;height:10px;border-radius:99px;background:#ECE5D5;overflow:hidden;position:relative;z-index:2}
+.hero .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--honey),var(--pri));transition:width .6s cubic-bezier(.22,1,.36,1)}
+
+.banner{margin:12px 16px 0;padding:11px 14px;border-radius:18px;background:#FBF3DC;border:1.5px dashed var(--honey-d);color:#8a6d1f;font-size:12px;display:flex;align-items:center;gap:8px;font-weight:600}
+.banner b{margin-left:auto;cursor:pointer;color:var(--acc);white-space:nowrap}
+
+/* ============ 剂量卡片（胶囊风） ============ */
+.dose{margin:10px 16px 0;padding:13px 13px 13px 15px;border-radius:24px;background:var(--card);box-shadow:var(--shadow-s);display:flex;align-items:center;gap:11px;position:relative;overflow:hidden}
+.dose::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:5px;border-radius:99px;background:var(--c,#ccc)}
+.dose .dm{flex:1;min-width:0;padding-left:4px}
+.dose .dn{font-size:15px;font-weight:800;display:flex;align-items:center;gap:7px}
+.dose .dn .tg{font-size:9px;padding:2px 7px;border-radius:99px;font-weight:800}
+.tg.med{background:var(--acc-l);color:var(--acc)}
+.tg.sup{background:var(--pri-l);color:var(--pri-d)}
+.dose .dx{font-size:11.5px;color:var(--sub);margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-weight:600}
+.dose .dx .ot{color:var(--bad);font-weight:800}
+.dose .da{display:flex;flex-direction:column;gap:6px}
+.dose .da .btn{padding:8px 15px;font-size:11.5px}
+.dose.overdue::before{background:var(--bad)}
+.dose.overdue{background:linear-gradient(0deg,var(--bad-l),var(--bad-l));background:var(--bad-l)}
+.dose.overdue .btn-p{background:var(--bad);box-shadow:0 4px 12px rgba(212,101,79,.35)}
+@keyframes donePop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.done-list .dose{opacity:.8;box-shadow:none;background:#F5F1E6}
+.done-list .dose::before{background:#D8CFBB}
+.st{font-size:10.5px;font-weight:800;display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:2px 9px;border-radius:99px}
+.st.taken{background:#E3F0DA;color:#3f6b33;animation:donePop .35s}
+.st.skipped{background:#FBF0DA;color:#a0742a}
+.st.missed{background:var(--bad-l);color:var(--bad)}
+.undo{background:none;border:none;color:var(--pri);font-size:11px;font-weight:800;cursor:pointer;padding:6px 4px}
+.fold{margin:14px 16px 0;background:#EFE9DB;border:none;width:calc(100% - 32px);text-align:center;font-size:11.5px;color:var(--sub);cursor:pointer;padding:9px;border-radius:99px;font-weight:700}
+.empty-today{margin:36px 30px;text-align:center;color:var(--sub);font-size:13px;line-height:2}
+.empty-today .big{font-size:44px}
+
+/* ============ 营养页 ============ */
+.nut-hero{margin:2px 16px 0;padding:18px 16px;position:relative;overflow:hidden;background:linear-gradient(135deg,#5F8D4E,#7BA96A);color:#fff;border-radius:26px;box-shadow:0 10px 26px rgba(95,141,78,.3)}
+.nut-hero::after{content:"🥗";position:absolute;right:8px;bottom:-16px;font-size:78px;opacity:.18;transform:rotate(-8deg)}
+.nut-hero .nh-t{font-size:12px;font-weight:700;opacity:.9;letter-spacing:1px}
+.nut-hero .nh-n{font-size:26px;font-weight:900;margin-top:4px}
+.nut-hero .nh-n small{font-size:13px;font-weight:700;opacity:.85}
+.nut-hero .nh-s{font-size:11px;margin-top:6px;opacity:.9;position:relative;z-index:2}
+.nut{margin:10px 16px 0;padding:15px 15px 13px;border-radius:24px;background:var(--card);box-shadow:var(--shadow-s)}
+.nut .top{display:flex;align-items:baseline;gap:8px}
+.nut .nm{font-size:14px;font-weight:800}
+.nut .src{margin-left:auto;font-size:10px;color:var(--sub);font-weight:600}
+.nut .nums{display:flex;align-items:baseline;gap:6px;margin-top:8px;font-size:11px;color:var(--sub);font-weight:700}
+.nut .nums .cur{font-size:19px;font-weight:900;color:var(--ink)}
+.nut .nums .goal{margin-left:auto}
+.nut .track{position:relative;margin-top:8px;height:14px;border-radius:99px;background:#EFE9DB}
+.nut .fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;width:0;transition:width .8s cubic-bezier(.22,1,.36,1)}
+.nut .fill.low{background:linear-gradient(90deg,var(--honey),#E9BF7A)}
+.nut .fill.ok{background:linear-gradient(90deg,#8FBC78,var(--pri))}
+.nut .fill.over{background:linear-gradient(90deg,var(--acc),var(--bad))}
+.nut .tick{position:absolute;top:-3px;bottom:-3px;width:2.5px;border-radius:2px;background:#B9AE99}
+.nut .tick.rni{background:var(--pri-d)}
+.nut .tick.ul{background:var(--bad)}
+.nut .tick i{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:8.5px;font-style:normal;color:var(--sub);white-space:nowrap;font-weight:700}
+.nut .tick.ul i{color:var(--bad)}
+.nut .msg{margin-top:11px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:6px}
+.nut .msg.low{color:var(--honey-d)}
+.nut .msg.ok{color:var(--pri-d)}
+.nut .msg.over{color:var(--bad)}
+.nut .msg.warn-high{color:var(--acc)}
+.nut .from{margin-top:6px;font-size:10px;color:var(--sub);display:flex;gap:5px;flex-wrap:wrap}
+.nut .from span{background:#F4EFE3;border-radius:99px;padding:2px 8px;font-weight:600}
+.nut-note{margin:16px;padding:13px 15px;border-radius:20px;background:#F4EFE3;font-size:10.5px;color:var(--sub);line-height:1.8}
+.nut-note b{color:var(--ink)}
+
+/* ============ 记录页 ============ */
+.cal{margin:4px 16px 0;padding:15px 13px 13px}
+.cal .ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 4px}
+.cal .ch b{font-size:15px}
+.cal .ch span{font-size:10.5px;color:var(--sub);font-weight:600}
+.cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal .wk{text-align:center;font-size:10px;color:var(--sub);padding:4px 0;font-weight:700}
+.cal .cd{position:relative;height:38px;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:14px;cursor:pointer;font-weight:600}
+.cal .cd.blank{cursor:default}
+.cal .cd .dot{position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%}
+.cal .cd.today{background:var(--pri);color:#fff;font-weight:800;box-shadow:0 4px 10px rgba(95,141,78,.4)}
+.cal .cd.sel{outline:2.5px solid var(--pri);outline-offset:-2px;font-weight:800}
+.cal .cd.future{color:#C9C0AE}
+.dot.ok{background:var(--pri)} .dot.warn{background:var(--honey-d)} .dot.bad{background:var(--bad)} .dot.none{background:#D8CFBB}
+.cal .lg{display:flex;gap:12px;justify-content:center;margin-top:11px;font-size:10px;color:var(--sub);font-weight:600}
+.cal .lg i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px}
+.ev-row{display:flex;align-items:center;gap:10px;padding:11px 15px;border-top:1.5px solid #F3EDE0;font-size:12px}
+.ev-row:first-child{border-top:none}
+.ev-row .tm{width:42px;color:var(--sub);font-weight:700}
+.ev-row .nm{flex:1;font-weight:700}
+.ev-row .nm small{color:var(--sub);font-weight:600;margin-left:4px}
+.ev-st{font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px}
+.ev-st.taken{background:#E3F0DA;color:#3f6b33}
+.ev-st.skipped{background:#FBF0DA;color:#a0742a}
+.ev-st.missed{background:var(--bad-l);color:var(--bad)}
+.ev-st.pending{background:#EFE9DB;color:var(--sub)}
+.fix-btn{background:none;border:1.5px solid var(--pri);color:var(--pri);border-radius:99px;font-size:10px;padding:3px 10px;cursor:pointer;font-weight:800}
+.stat-cards{display:flex;gap:10px;margin:12px 16px 0}
+.stat-card{flex:1;padding:14px 8px;text-align:center;border-radius:22px}
+.stat-card .v{font-size:21px;font-weight:900;color:var(--pri-d)}
+.stat-card .v.warn-c{color:var(--honey-d)}
+.stat-card .k{font-size:10px;color:var(--sub);margin-top:3px;font-weight:700}
+.ad-row{display:flex;align-items:center;gap:10px;margin:0 16px;padding:9px 2px;font-size:12px}
+.ad-row .n{width:92px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ad-row .bar{flex:1;height:10px;border-radius:99px;background:#EFE9DB;overflow:hidden}
+.ad-row .bar i{display:block;height:100%;border-radius:99px;transition:width .6s}
+.ad-row .p{width:38px;text-align:right;color:var(--sub);font-size:11px;font-weight:700}
+
+/* ============ 药箱页 ============ */
+.add-btn{width:38px;height:38px;border-radius:50%;background:var(--acc);color:#fff;border:none;font-size:21px;cursor:pointer;box-shadow:0 5px 14px rgba(224,122,95,.45);font-weight:300}
+.add-btn:active{animation:pop .25s}
+.med-row{margin:9px 16px 0;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-radius:24px;background:var(--card);box-shadow:var(--shadow-s);transition:transform .1s}
+.med-row:active{transform:scale(.98)}
+.med-dot{width:44px;height:44px;border-radius:16px;flex:0 0 44px;display:flex;align-items:center;justify-content:center;font-size:21px;color:#fff}
+.med-info{flex:1;min-width:0}
+.med-name{font-size:14px;font-weight:800}
+.med-name .fire{font-size:10.5px;color:var(--acc);font-weight:800}
+.med-sub{font-size:11px;color:var(--sub);margin-top:4px;font-weight:600}
+.med-stock{font-size:10px;color:var(--sub);text-align:right;line-height:1.6;font-weight:600}
+.med-stock .pill{display:inline-block;padding:2px 9px;border-radius:99px;background:#F4EFE3}
+.med-stock.low{color:var(--bad);font-weight:800}
+.med-stock.low .pill{background:var(--bad-l)}
+
+/* ============ 设置页 ============ */
+.set-group{margin:12px 16px 0;overflow:hidden;border-radius:24px}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-top:1.5px solid #F3EDE0;font-size:13px;cursor:pointer;font-weight:700}
+.set-row:first-child{border-top:none}
+.set-row .l{display:flex;align-items:center;gap:10px}
+.set-row .l .ic{width:30px;height:30px;border-radius:10px;background:var(--pri-l);display:flex;align-items:center;justify-content:center;font-size:14px}
+.set-row .v{color:var(--sub);font-size:12px;font-weight:600}
+.tgl{width:44px;height:26px;border-radius:99px;background:#DCD3BF;position:relative;transition:.2s;flex:0 0 44px}
+.tgl::after{content:"";position:absolute;top:2.5px;left:2.5px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.tgl.on{background:var(--pri)}
+.tgl.on::after{left:20.5px}
+.disclaim{margin:16px;padding:14px 16px;border-radius:20px;background:#F4EFE3;border:1.5px dashed #CFC4AC;font-size:10.5px;color:var(--sub);line-height:1.8}
+
+/* ============ 详情子页 ============ */
+.subpage .back{background:#EFE9DB;border:none;font-size:12.5px;color:var(--ink);font-weight:800;cursor:pointer;padding:8px 16px;border-radius:99px}
+.det-head{margin:4px 16px 0;padding:20px 18px;color:#fff;position:relative;overflow:hidden;border-radius:26px}
+.det-head .tp{position:relative;z-index:2}
+.det-head .tp .nm{font-size:21px;font-weight:900}
+.det-head .tp .mt{font-size:11px;opacity:.92;margin-top:6px;font-weight:600}
+.det-head .big-ic{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:60px;opacity:.28}
+.kv{display:flex;justify-content:space-between;padding:12px 16px;border-top:1.5px solid #F3EDE0;font-size:12px;font-weight:700}
+.kv:first-child{border-top:none}
+.kv .k{color:var(--sub);font-weight:600}
+.stock-ctl{display:flex;align-items:center;gap:13px}
+.stock-ctl button{width:28px;height:28px;border-radius:50%;border:none;background:var(--pri-l);font-size:16px;cursor:pointer;color:var(--pri-d);font-weight:800}
+.stock-ctl b{min-width:52px;text-align:center}
+.ing-chip{display:inline-flex;align-items:center;gap:5px;background:#F4EFE3;border-radius:99px;padding:5px 12px;font-size:11px;font-weight:700;margin:0 6px 6px 0}
+
+/* ============ 新增向导 ============ */
+.modal{position:absolute;inset:0;background:rgba(62,58,51,.4);z-index:80;display:none;align-items:flex-end}
+.modal.open{display:flex}
+.sheet{width:100%;height:89%;background:var(--bg);border-radius:28px 28px 0 0;display:flex;flex-direction:column;animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px);opacity:.5}to{transform:none;opacity:1}}
+.sheet-h{padding:15px 18px 10px;display:flex;align-items:center;justify-content:space-between}
+.sheet-h .tt{font-size:16px;font-weight:900}
+.sheet-h .x{background:#EAE3D2;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;color:var(--sub);font-weight:700}
+.steps{display:flex;gap:5px;padding:0 18px 10px}
+.steps i{flex:1;height:4px;border-radius:99px;background:#E3DBC7}
+.steps i.done{background:var(--pri)}
+.sheet-b{flex:1;overflow-y:auto;padding:4px 18px 14px;scrollbar-width:none}
+.sheet-b::-webkit-scrollbar{display:none}
+.sheet-f{padding:12px 18px 20px;display:flex;gap:10px;background:var(--card);border-top:1.5px solid var(--line);border-radius:0}
+.sheet-f .btn{flex:1;padding:14px;font-size:14px}
+.sheet-f .btn-g{flex:0 0 100px;box-shadow:none}
+.type-cards{display:flex;gap:12px;margin-top:8px}
+.type-card{flex:1;padding:24px 12px;text-align:center;border-radius:24px;background:var(--card);border:2.5px solid transparent;cursor:pointer;box-shadow:var(--shadow-s)}
+.type-card.sel{border-color:var(--pri);background:#F4F8EE}
+.type-card .ic{font-size:38px}
+.type-card .nm{font-weight:800;margin-top:9px;font-size:14px}
+.type-card .ds{font-size:10px;color:var(--sub);margin-top:5px;font-weight:600}
+.f-label{font-size:12px;font-weight:800;color:var(--sub);margin:17px 2px 9px}
+.f-input{width:100%;padding:13px 15px;border-radius:16px;border:2px solid var(--line);font-size:15px;background:var(--card);outline:none;font-weight:600;color:var(--ink)}
+.f-input:focus{border-color:var(--pri)}
+.opt-row{display:flex;gap:8px;flex-wrap:wrap}
+.opt{padding:9px 15px;border-radius:99px;background:var(--card);border:2px solid var(--line);font-size:12px;cursor:pointer;font-weight:700;color:var(--sub)}
+.opt.sel{border-color:var(--pri);color:var(--pri-d);background:#F4F8EE}
+.colors{display:flex;gap:13px;flex-wrap:wrap;padding:2px}
+.colors i{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:.15s}
+.colors i.sel{border-color:#fff;box-shadow:0 0 0 3px var(--pri);transform:scale(1.12)}
+.freq-card{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);border-radius:20px;border:2.5px solid transparent;margin-top:9px;cursor:pointer;box-shadow:var(--shadow-s)}
+.freq-card.sel{border-color:var(--pri);background:#F4F8EE}
+.freq-card .ic{font-size:21px}
+.freq-card .n{font-size:13px;font-weight:800}
+.freq-card .d{font-size:10px;color:var(--sub);margin-top:2px;font-weight:600}
+.sub-cfg{margin-top:10px;padding:13px;background:#F4F8EE;border-radius:16px;border:2px dashed var(--pri);font-size:12px;font-weight:700}
+.sub-cfg input{width:54px;padding:7px;border-radius:10px;border:2px solid var(--line);font-size:13px;text-align:center}
+.time-row{display:flex;gap:8px;align-items:center;margin-top:9px}
+.time-row input[type=time]{padding:10px;border-radius:12px;border:2px solid var(--line);font-size:13px;background:var(--card);font-weight:700;color:var(--ink)}
+.time-row input[type=number]{width:62px;padding:10px 8px;border-radius:12px;border:2px solid var(--line);font-size:13px;font-weight:700}
+.time-row select{padding:10px 6px;border-radius:12px;border:2px solid var(--line);font-size:12px;background:var(--card);font-weight:700;color:var(--ink)}
+.time-row .del{margin-left:auto;background:var(--bad-l);border:none;color:var(--bad);cursor:pointer;font-size:13px;width:28px;height:28px;border-radius:50%;font-weight:800}
+.add-line{margin-top:11px;background:none;border:2px dashed var(--pri);color:var(--pri-d);width:100%;padding:10px;border-radius:16px;font-size:12px;font-weight:800;cursor:pointer}
+.ing-row{display:flex;gap:8px;align-items:center;margin-top:9px}
+.ing-row select{flex:1;padding:10px 8px;border-radius:12px;border:2px solid var(--line);font-size:12px;background:var(--card);font-weight:700;color:var(--ink)}
+.ing-row input{width:84px;padding:10px 8px;border-radius:12px;border:2px solid var(--line);font-size:13px;font-weight:700}
+.ing-list{margin-top:4px}
+.ing-item{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:14px;padding:9px 13px;margin-top:7px;font-size:12px;font-weight:700;box-shadow:var(--shadow-s)}
+.ing-item .u{color:var(--sub);font-weight:600}
+.ing-item button{margin-left:auto;background:var(--bad-l);border:none;color:var(--bad);width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:11px;font-weight:800}
+.ing-hint{font-size:10.5px;color:var(--sub);margin-top:10px;line-height:1.7;background:#F4EFE3;padding:10px 13px;border-radius:14px}
+
+/* ============ 侧边栏 ============ */
+.aside{width:336px;flex:0 1 336px;display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--card);border-radius:26px;box-shadow:0 10px 30px rgba(93,80,60,.10);padding:19px}
+.panel h3{font-size:14px;margin-bottom:13px;display:flex;align-items:center;gap:8px;font-weight:900}
+.lockscreen{background:linear-gradient(165deg,#5a7050,#3E3A33);border-radius:20px;padding:17px 13px;color:#fff}
+.lockscreen .lt{text-align:center;font-size:33px;font-weight:200;letter-spacing:2px}
+.lockscreen .ld{text-align:center;font-size:11px;color:#d8d2c2;margin:3px 0 15px}
+.notif{background:rgba(255,253,248,.16);backdrop-filter:blur(6px);border-radius:18px;padding:13px;transition:.3s}
+.notif .nh{display:flex;align-items:center;gap:6px;font-size:10px;color:#e5dfcd;margin-bottom:7px;font-weight:700}
+.notif .nh .app-ic{width:19px;height:19px;border-radius:6px;background:var(--pri);display:flex;align-items:center;justify-content:center;font-size:10px}
+.notif .nb{font-size:13px;font-weight:800}
+.notif .nb small{font-weight:600;color:#e5dfcd;margin-left:4px}
+.notif .na{display:flex;gap:8px;margin-top:11px}
+.notif .na button{flex:1;padding:9px;border-radius:99px;border:none;font-size:11px;font-weight:800;cursor:pointer;background:rgba(255,253,248,.25);color:#fff;transition:.15s}
+.notif .na button:hover{background:rgba(255,253,248,.4)}
+.notif .na button.pri{background:var(--pri)}
+.notif.confirmed{outline:2.5px solid #A8D08D}
+.notif .cf{font-size:11px;color:#CDE3B8;margin-top:9px;font-weight:800;display:none}
+.notif.confirmed .cf{display:block}
+.hint-list{list-style:none;font-size:12px;color:var(--sub);line-height:1.55;font-weight:600}
+.hint-list li{padding:8px 0;border-bottom:1.5px dashed #EFE8D8;display:flex;gap:9px}
+.hint-list li:last-child{border:none}
+.hint-list li b{color:var(--ink)}
+.hint-list .k{flex:0 0 auto;width:21px;height:21px;border-radius:8px;background:var(--pri-l);color:var(--pri-d);font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.design-points{font-size:11.5px;color:var(--sub);line-height:1.9;font-weight:600}
+.design-points b{color:var(--pri-d)}
+
+.toast{position:absolute;left:50%;bottom:92px;transform:translateX(-50%) translateY(20px);background:rgba(62,58,51,.94);color:#FFFDF8;padding:11px 19px;border-radius:99px;font-size:12px;font-weight:700;opacity:0;transition:.25s;z-index:90;pointer-events:none;white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:840px){ .aside{width:378px;flex-basis:378px} }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>🌱 用药记 <small>产品交互原型 · V2.0 自然活力版 · 含营养素摄入对比模块（DRIs 2023）</small></h1>
+  <div class="legend">
+    <span><i style="background:var(--pri)"></i>已服用/达标</span>
+    <span><i style="background:var(--honey-d)"></i>跳过/未达标</span>
+    <span><i style="background:var(--bad)"></i>漏服/超上限</span>
+    <span><i style="background:#C9C0AE"></i>待确认</span>
+  </div>
+</div>
+
+<div class="stage">
+  <!-- ================= 手机 ================= -->
+  <div class="phone">
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="statusbar"><span>13:47</span><span class="sicons">●●●○ 5G ▮▮▮▯</span></div>
+
+      <!-- ===== 今日 ===== -->
+      <div id="pg-today" class="page active">
+        <div class="appbar"><div class="t">今日</div><div class="r">10月11日 周日</div></div>
+        <div class="hero card">
+          <div class="row">
+            <div class="plant"><span id="plantIcon">🌿</span></div>
+            <div class="hi">
+              <div class="pname" id="plantStage">茁壮小苗 · 连续灌溉 23 天</div>
+              <div class="ptitle" id="heroTitle">还有 5 项待服用</div>
+              <div class="psub" id="heroSub">全部完成即可为小草浇水 💧</div>
+            </div>
+          </div>
+          <div class="bar"><i id="heroBar" style="width:0%"></i></div>
+        </div>
+        <div id="stockBanner"></div>
+        <div class="sec-t" id="todoTitle">待服用</div>
+        <div id="todoList"></div>
+        <div id="doneWrap"></div>
+      </div>
+
+      <!-- ===== 营养 ===== -->
+      <div id="pg-nutrition" class="page">
+        <div class="appbar"><div class="t">营养摄入</div><div class="r" id="nutProfileTag">成年男性 ›</div></div>
+        <div class="nut-hero">
+          <div class="nh-t">今日已摄入营养素</div>
+          <div class="nh-n"><span id="nutCount">0</span> 种 <small>· 达标 <span id="nutOk">0</span> 种</small></div>
+          <div class="nh-s">对照《中国居民膳食营养素参考摄入量 2023》</div>
+        </div>
+        <div id="nutList"></div>
+        <div class="nut-note">
+          <b>📖 参考标准</b>：中国营养学会《中国居民膳食营养素参考摄入量（2023 版）》，按「成年男性」人群取值（可在设置切换）。<br>
+          <b>RNI</b> 推荐摄入量 · <b>AI</b> 适宜摄入量 · <b>UL</b> 可耐受最高摄入量。<br>
+          ⚠️ 仅统计保健品补充量，不含膳食摄入，结果仅供参考，不构成医疗建议。
+        </div>
+      </div>
+
+      <!-- ===== 记录 ===== -->
+      <div id="pg-history" class="page">
+        <div class="appbar"><div class="t">记录</div><div class="r">2026年10月</div></div>
+        <div class="cal card">
+          <div class="ch"><b>🗓️ 10月</b><span>点日期查看明细 / 补记</span></div>
+          <div class="grid" id="calGrid"></div>
+          <div class="lg">
+            <span><i class="dot ok" style="position:static"></i>完成</span>
+            <span><i class="dot warn" style="position:static"></i>有跳过</span>
+            <span><i class="dot bad" style="position:static"></i>有漏服</span>
+            <span><i class="dot none" style="position:static"></i>无计划</span>
+          </div>
+        </div>
+        <div class="sec-t" id="dayDetailTitle">当日明细</div>
+        <div class="card" style="margin:0 16px" id="dayDetail"></div>
+        <div class="stat-cards">
+          <div class="stat-card card"><div class="v">92%</div><div class="k">近7天依从率</div></div>
+          <div class="stat-card card"><div class="v warn-c">88%</div><div class="k">近30天依从率</div></div>
+          <div class="stat-card card"><div class="v">23🌱</div><div class="k">连续灌溉天数</div></div>
+        </div>
+        <div class="sec-t">按药品依从率（近30天）</div>
+        <div id="adList" style="padding-bottom:8px"></div>
+      </div>
+
+      <!-- ===== 药箱 ===== -->
+      <div id="pg-cabinet" class="page">
+        <div class="appbar"><div class="t">药箱</div><button class="add-btn" onclick="openWizard()">＋</button></div>
+        <div id="cabinetList"></div>
+      </div>
+
+      <!-- ===== 设置 ===== -->
+      <div id="pg-settings" class="page">
+        <div class="appbar"><div class="t">设置</div><div class="r"></div></div>
+        <div class="sec-t">营养参考</div>
+        <div class="set-group card">
+          <div class="set-row" onclick="toggleProfile()"><div class="l"><span class="ic">🧍</span>人群档案（DRIs 取值）</div><span class="v" id="profileVal">成年男性 ›</span></div>
+        </div>
+        <div class="sec-t">提醒</div>
+        <div class="set-group card">
+          <div class="set-row"><div class="l"><span class="ic">🔔</span>服用提醒</div><div class="tgl on" onclick="toggle(this)"></div></div>
+          <div class="set-row"><div class="l"><span class="ic">⏰</span>提醒声音与震动</div><span class="v">默认 ›</span></div>
+          <div class="set-row" onclick="toast('原型演示：可选 1~8 小时')"><div class="l"><span class="ic">⏳</span>漏服确认窗口</div><span class="v">4 小时 ›</span></div>
+          <div class="set-row" onclick="toast('原型演示：可选 5/10/15/30 分钟')"><div class="l"><span class="ic">💤</span>稍后提醒时长</div><span class="v">10 分钟 ›</span></div>
+        </div>
+        <div class="sec-t">系统权限（Android 保活）</div>
+        <div class="set-group card">
+          <div class="set-row"><div class="l"><span class="ic">✅</span>通知权限</div><span class="v" style="color:var(--pri-d)">已开启</span></div>
+          <div class="set-row"><div class="l"><span class="ic">✅</span>精确闹钟权限</div><span class="v" style="color:var(--pri-d)">已开启</span></div>
+          <div class="set-row" onclick="toast('引导页：跳转系统电池优化白名单设置')"><div class="l"><span class="ic">🔋</span>电池优化白名单</div><span class="v" style="color:var(--acc)">去开启 ›</span></div>
+          <div class="set-row" onclick="toast('引导页：小米/华为/OPPO/vivo 自启动管理图文指引')"><div class="l"><span class="ic">🛡️</span>国产 ROM 保活引导</div><span class="v">查看 ›</span></div>
+        </div>
+        <div class="sec-t">数据</div>
+        <div class="set-group card">
+          <div class="set-row" onclick="toast('已导出 intake_events_20261011.csv（演示）')"><div class="l"><span class="ic">📤</span>导出记录 CSV</div><span class="v">›</span></div>
+          <div class="set-row" onclick="toast('原型演示')"><div class="l"><span class="ic">📥</span>导入备份</div><span class="v">›</span></div>
+          <div class="set-row" onclick="toast('二次确认弹窗（演示）')"><div class="l"><span class="ic">🗑️</span>清空全部数据</div><span class="v" style="color:var(--bad)">›</span></div>
+        </div>
+        <div class="sec-t">关于</div>
+        <div class="set-group card">
+          <div class="set-row"><div class="l"><span class="ic">📄</span>用户协议与隐私政策</div><span class="v">›</span></div>
+          <div class="set-row"><div class="l"><span class="ic">ℹ️</span>版本</div><span class="v">V2.0.0 (Prototype)</span></div>
+        </div>
+        <div class="disclaim">⚠️ <b>免责声明</b>：本应用仅提供服用提醒与记录功能，营养素参考值来源于公开标准，不构成医疗建议、诊断或治疗依据。所有用药请遵医嘱，请勿根据本应用记录自行调整剂量或停药。数据仅存储于您的设备本地。</div>
+      </div>
+
+      <!-- ===== 详情子页 ===== -->
+      <div id="pg-detail" class="page subpage">
+        <div class="appbar"><button class="back" onclick="closeDetail()">‹ 药箱</button><div class="r"></div></div>
+        <div id="detailBody"></div>
+      </div>
+
+      <!-- ===== Tabbar（5 Tab） ===== -->
+      <nav class="tabbar" id="tabbar">
+        <button class="tab on" data-pg="today" onclick="switchTab('today',this)"><span class="ic">☀️</span>今日</button>
+        <button class="tab" data-pg="nutrition" onclick="switchTab('nutrition',this)"><span class="ic">🥗</span>营养</button>
+        <button class="tab" data-pg="history" onclick="switchTab('history',this)"><span class="ic">📅</span>记录</button>
+        <button class="tab" data-pg="cabinet" onclick="switchTab('cabinet',this)"><span class="ic">🧺</span>药箱</button>
+        <button class="tab" data-pg="settings" onclick="switchTab('settings',this)"><span class="ic">⚙️</span>设置</button>
+      </nav>
+
+      <!-- ===== 新增向导 ===== -->
+      <div class="modal" id="wizard">
+        <div class="sheet">
+          <div class="sheet-h"><div class="tt" id="wizTitle">新增</div><button class="x" onclick="closeWizard()">✕</button></div>
+          <div class="steps" id="wizSteps"></div>
+          <div class="sheet-b" id="wizBody"></div>
+          <div class="sheet-f" id="wizFoot"></div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+  <!-- ================= 侧边说明 ================= -->
+  <div class="aside">
+    <div class="panel">
+      <h3>📱 锁屏通知预览（3 秒闭环）</h3>
+      <div class="lockscreen">
+        <div class="lt">13:47</div>
+        <div class="ld">10月11日 周日 · 霜降将至</div>
+        <div class="notif" id="notifCard">
+          <div class="nh"><span class="app-ic">🌱</span>用药记 · 现在</div>
+          <div class="nb">该吃「阿利沙坦酯」了<small>1 片</small></div>
+          <div class="na">
+            <button class="pri" onclick="notifTaken()">✓ 已服用</button>
+            <button onclick="notifSnooze(this)">💤 稍后 10 分钟</button>
+          </div>
+          <div class="cf">✓ 已记录 · 库存自动 -1（无需打开 App）</div>
+        </div>
+      </div>
+      <div class="design-points" style="margin-top:10px">
+        <b>联动演示：</b>点通知的【已服用】，左侧今日页卡片同步变为已服，进度条前进。
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>🥗 营养素对比模块（新增）</h3>
+      <div class="design-points">
+        · 保健品录入<b>成分含量</b>（每粒含 XX mg），服药确认后<b>自动汇总</b>当日各营养素摄入<br>
+        · 对照 <b>DRIs 2023</b>：蜂蜜黄=未达 RNI，苔藓绿=已达标，陶红=超 UL 上限<br>
+        · <b>维生素D 演示了"接近上限"预警</b>：D3(25μg)+复合维生素(20μg)=45μg，逼近 UL 50μg<br>
+        · 设置页可切换<b>人群档案</b>（男/女 DRIs 不同，如铁 12/20mg）<br>
+        · <b>试玩</b>：今日页把「复合维生素」点【已服用】→ 切到「营养」Tab 看 5 条进度条动画涨起
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>🖱️ 演示脚本</h3>
+      <ul class="hint-list">
+        <li><span class="k">1</span><div><b>今日页</b>：点卡片【已服用】看进度与库存联动，顶部小植物是"灌溉"游戏化</div></li>
+        <li><span class="k">2</span><div><b>营养 Tab</b>：查看 RNI/UL 双刻度进度条与来源拆分</div></li>
+        <li><span class="k">3</span><div><b>药箱【＋】</b>：选"保健品"会多出<b>成分录入</b>步骤（药品自动跳过）</div></li>
+        <li><span class="k">4</span><div><b>记录页</b>：点 10月7日（红点）→【补记】修正漏服</div></li>
+        <li><span class="k">5</span><div><b>设置页</b>：切换人群档案，营养页铁摄入量参考线实时变化</div></li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>🎨 设计语言：自然活力</h3>
+      <div class="design-points">
+        · <b>色彩</b>：奶油底 + 苔藓绿 + 陶土橙 + 蜂蜜黄，大地色系<br>
+        · <b>形状</b>：24px 大圆角 + 胶囊形按钮/进度条<br>
+        · <b>游戏化</b>：连续打卡 = 灌溉植物（🌱→🌿→🪴→🌻）<br>
+        · <b>仪式感</b>：打卡弹跳动画、完成撒花<br>
+        · 参照 Finch / Streaks 的轻松养成气质
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================== Mock 数据 ==================== */
+const NOW = '13:47';
+let PROFILE = 'male'; // male / female —— 影响 DRIs 取值（如铁）
+
+/* DRIs 2023 营养素参考表（rni=推荐摄入量, ai=适宜摄入量, ul=可耐受最高摄入量, rniF=女性值） */
+const DRIS = {
+  vd:  {name:'维生素D',  unit:'μg',    rni:10,   ul:50,   cat:'vit'},
+  vc:  {name:'维生素C',  unit:'mg',    rni:100,  ul:2000, cat:'vit'},
+  va:  {name:'维生素A',  unit:'μgRAE', rni:800,  ul:3000, cat:'vit', rniF:700},
+  b12: {name:'维生素B12',unit:'μg',    rni:2.4,  ul:null, cat:'vit'},
+  ca:  {name:'钙',       unit:'mg',    rni:800,  ul:2000, cat:'min'},
+  fe:  {name:'铁',       unit:'mg',    rni:12,   ul:42,   cat:'min', rniF:20},
+  zn:  {name:'锌',       unit:'mg',    rni:12.5, ul:40,   cat:'min', rniF:7.5},
+  mg:  {name:'镁',       unit:'mg',    rni:330,  ul:null, cat:'min'},
+  omg: {name:'Omega-3 (EPA+DHA)', unit:'mg', rni:250, ul:null, cat:'fat', ai:true},
+};
+const CAT_NAME = {vit:'🍊 维生素', min:'🪨 矿物质', fat:'🐟 脂肪酸'};
+
+const MEDS = {
+  m1:{id:'m1',name:'阿利沙坦酯',type:'medicine',form:'💊',formName:'片剂',color:'#E07A5F',inst:'',unit:'片',stock:28,lowDays:7,dailyDose:1,schedule:'每天 · 08:00 · 1片',adher:90,range:'2026-10-01 ~ 11-09（疗程）',freqDesc:'每天',nutrients:null},
+  m2:{id:'m2',name:'二甲双胍',type:'medicine',form:'💊',formName:'片剂',color:'#DDA54F',inst:'随餐',unit:'片',stock:52,lowDays:7,dailyDose:2,schedule:'每天 · 12:30 / 18:30 · 各1片',adher:85,range:'2026-09-15 ~ 长期',freqDesc:'每天',nutrients:null},
+  s1:{id:'s1',name:'维生素D3',type:'supplement',form:'🌞',formName:'软胶囊',color:'#F2CC8F',inst:'随早餐',unit:'粒',stock:5,lowDays:7,dailyDose:1,schedule:'每天 · 08:00 · 1粒',adher:100,streak:23,range:'2026-06-01 ~ 长期',freqDesc:'每天',nutrients:{vd:25}},
+  s2:{id:'s2',name:'鱼油 Omega-3',type:'supplement',form:'🐟',formName:'软胶囊',color:'#7BA96A',inst:'随餐',unit:'粒',stock:60,lowDays:7,dailyDose:4,schedule:'每天 · 08:00 / 20:00 · 各2粒',adher:80,streak:12,range:'2026-08-10 ~ 长期',freqDesc:'每天',nutrients:{omg:300}},
+  s3:{id:'s3',name:'褪黑素',type:'supplement',form:'🌙',formName:'片剂',color:'#9B8CB8',inst:'睡前',unit:'片',stock:20,lowDays:7,dailyDose:1,schedule:'每天 · 21:30 · 1片',adher:95,streak:6,range:'2026-10-01 ~ 长期',freqDesc:'每天',nutrients:null},
+  s4:{id:'s4',name:'镁片',type:'supplement',form:'🌿',formName:'片剂',color:'#5F8D4E',inst:'',unit:'片',stock:40,lowDays:7,dailyDose:1,schedule:'吃5天停2天 · 08:00 · 1片',adher:88,streak:3,range:'2026-09-20 ~ 长期',freqDesc:'周期循环 5/2',nutrients:{mg:150}},
+  s5:{id:'s5',name:'复合维生素',type:'supplement',form:'🧬',formName:'片剂',color:'#E8A0B4',inst:'随午餐',unit:'片',stock:45,lowDays:7,dailyDose:1,schedule:'每天 · 13:00 · 1片',adher:86,streak:5,range:'2026-09-01 ~ 长期',freqDesc:'每天',nutrients:{vc:60,va:400,b12:2.4,fe:10,zn:7.5,vd:20}},
+};
+let EVENTS = [
+  {id:'e1',med:'m1',time:'08:00',dose:1,status:'pending'},
+  {id:'e2',med:'s1',time:'08:00',dose:1,status:'taken',actual:'08:05'},
+  {id:'e3',med:'s2',time:'08:00',dose:2,status:'taken',actual:'08:06'},
+  {id:'e4',med:'s4',time:'08:00',dose:1,status:'taken',actual:'08:07'},
+  {id:'e9',med:'s5',time:'13:00',dose:1,status:'pending'},
+  {id:'e6',med:'m2',time:'12:30',dose:1,status:'pending'},
+  {id:'e7',med:'s2',time:'20:00',dose:2,status:'pending'},
+  {id:'e8',med:'s3',time:'21:30',dose:1,status:'pending'},
+];
+const CAL = {1:'ok',2:'ok',3:'ok',4:'ok',5:'warn',6:'ok',7:'bad',8:'ok',9:'ok',10:'ok',11:'today'};
+let selDay = 11;
+const DAY_PLAN = [
+  {med:'m1',time:'08:00',dose:1},{med:'s1',time:'08:00',dose:1},{med:'s2',time:'08:00',dose:2},{med:'s4',time:'08:00',dose:1},
+  {med:'s5',time:'13:00',dose:1},{med:'m2',time:'12:30',dose:1},{med:'m2',time:'18:30',dose:1},{med:'s2',time:'20:00',dose:2},{med:'s3',time:'21:30',dose:1},
+];
+
+/* ==================== 工具 ==================== */
+const $ = id => document.getElementById(id);
+let toastTimer;
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);}
+function toggle(el){el.classList.toggle('on');toast(el.classList.contains('on')?'已开启':'已关闭');}
+function overdue(e){return e.status==='pending' && e.time < NOW;}
+function rniOf(n){ return (PROFILE==='female' && n.rniF)? n.rniF : n.rni; }
+
+/* ==================== 今日页 ==================== */
+function renderToday(){
+  const pend = EVENTS.filter(e=>e.status==='pending').sort((a,b)=>a.time<b.time?-1:1);
+  const done = EVENTS.filter(e=>e.status!=='pending').sort((a,b)=>a.time<b.time?1:-1);
+  const total = EVENTS.length, confirmed = done.length;
+  const pct = total? Math.round(confirmed/total*100) : 0;
+  $('heroBar').style.width = pct + '%';
+  if(pend.length){
+    $('heroTitle').textContent = `还有 ${pend.length} 项待服用`;
+    $('heroSub').textContent = '全部完成即可为小草浇水 💧';
+    $('plantIcon').textContent = '🌿';
+    $('plantStage').textContent = '茁壮小苗 · 连续灌溉 23 天';
+  }else{
+    $('heroTitle').textContent = '今日灌溉完成！';
+    $('heroSub').textContent = '小草喝饱啦，明天继续加油 🌻';
+    $('plantIcon').textContent = '🌻';
+    $('plantStage').textContent = '盛开 · 连续灌溉 24 天';
+  }
+  const lows = Object.values(MEDS).filter(m=>m.stock!=null && m.stock/m.dailyDose <= m.lowDays);
+  $('stockBanner').innerHTML = lows.map(m=>`<div class="banner">🍂 <span><b>${m.name}</b> 库存约还能吃 ${Math.floor(m.stock/m.dailyDose)} 天</span><b onclick="toast('已记录补货待办（演示）')">去补货 ›</b></div>`).join('');
+  $('todoTitle').textContent = pend.length? '待服用' : '';
+  $('todoList').innerHTML = pend.length? pend.map(e=>{
+    const m = MEDS[e.med], od = overdue(e);
+    return `<div class="dose ${od?'overdue':''}" style="--c:${od?'var(--bad)':m.color}">
+      <div class="dm">
+        <div class="dn">${m.form} ${m.name}<span class="tg ${m.type==='medicine'?'med':'sup'}">${m.type==='medicine'?'药':'保'}</span></div>
+        <div class="dx">🕐 ${e.time} · ${e.dose}${m.unit}${m.inst?` · <span class="chip">${m.inst}</span>`:''}${od?' · <span class="ot">已超时</span>':''}${m.stock!=null?` · 余${m.stock}${m.unit}`:''}</div>
+      </div>
+      <div class="da">
+        <button class="btn btn-p" onclick="mark('${e.id}','taken')">已服用</button>
+        <button class="btn btn-g" onclick="mark('${e.id}','skipped')">跳过</button>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty-today"><div class="big">🌻</div>今日计划已全部确认<br><span style="font-size:11px">小草今天也喝饱水了</span></div>`;
+  $('doneWrap').innerHTML = done.length? `
+    <button class="fold" onclick="const l=$('doneList');l.style.display=l.style.display==='none'?'block':'none';this.textContent=(l.style.display==='none'?'▸':'▾')+' 今日已确认（${done.length}）'">▾ 今日已确认（${done.length}）</button>
+    <div id="doneList" class="done-list">${done.map(e=>{
+      const m=MEDS[e.med];
+      const stMap={taken:['✓ 已服用','taken'],skipped:['— 已跳过','skipped'],missed:['! 漏服','missed']};
+      const [txt,cls]=stMap[e.status];
+      return `<div class="dose" style="--c:#D8CFBB">
+        <div class="dm">
+          <div class="dn" style="font-size:13px">${m.form} ${m.name}</div>
+          <span class="st ${cls}">${txt}${e.status==='taken'&&e.actual?` · ${e.actual}`:''} · 计划${e.time}</span>
+        </div>
+        <button class="undo" onclick="undoEv('${e.id}')">撤销</button>
+      </div>`;
+    }).join('')}</div>` : '';
+}
+
+function mark(id,st){
+  const e = EVENTS.find(x=>x.id===id); if(!e||e.status!=='pending')return;
+  const m = MEDS[e.med];
+  e.status = st;
+  if(st==='taken'){
+    e.actual = NOW;
+    if(m.stock!=null){ m.stock = Math.max(0, m.stock - e.dose); }
+    toast(`✓ 已记录：${m.name} ${e.dose}${m.unit}${m.stock!=null?` · 库存 -${e.dose}`:''}`);
+  }else{
+    toast(`已跳过：${m.name}（可在记录页补记）`);
+  }
+  renderToday(); renderNutrition();
+}
+function undoEv(id){
+  const e = EVENTS.find(x=>x.id===id); if(!e)return;
+  const m = MEDS[e.med];
+  if(e.status==='taken' && m.stock!=null){ m.stock += e.dose; }
+  e.status='pending'; delete e.actual;
+  toast('已撤销，回到待服用');
+  renderToday(); renderNutrition();
+}
+function notifTaken(){
+  const e = EVENTS.find(x=>x.id==='e1');
+  if(e.status==='pending'){ mark('e1','taken'); }
+  $('notifCard').classList.add('confirmed');
+}
+function notifSnooze(btn){
+  btn.textContent='✓ 已稍后 · 13:57 再提醒'; btn.disabled=true;
+  toast('已稍后，10 分钟后将再次提醒');
+}
+
+/* ==================== 营养页（DRIs 对比） ==================== */
+function calcIntake(){
+  const intake = {};
+  EVENTS.filter(e=>e.status==='taken').forEach(e=>{
+    const m = MEDS[e.med];
+    if(!m.nutrients) return;
+    Object.entries(m.nutrients).forEach(([nid,per])=>{
+      const amt = per * e.dose;
+      if(!intake[nid]) intake[nid] = {amount:0, sources:[]};
+      intake[nid].amount += amt;
+      intake[nid].sources.push({form:m.form, name:m.name, amt});
+    });
+  });
+  return intake;
+}
+function renderNutrition(){
+  const intake = calcIntake();
+  $('nutProfileTag').textContent = (PROFILE==='male'?'成年男性':'成年女性') + ' ›';
+  const groups = {vit:[],min:[],fat:[]};
+  Object.entries(intake).forEach(([nid,d])=>{ groups[DRIS[nid].cat].push([nid,d]); });
+  let okCount = 0;
+  Object.entries(intake).forEach(([nid,d])=>{ if(d.amount >= rniOf(DRIS[nid])) okCount++; });
+  $('nutCount').textContent = Object.keys(intake).length;
+  $('nutOk').textContent = okCount;
+
+  let html = '';
+  Object.keys(groups).forEach(cat=>{
+    if(!groups[cat].length) return;
+    html += `<div class="sec-t">${CAT_NAME[cat]}</div>`;
+    groups[cat].forEach(([nid,d])=>{
+      const n = DRIS[nid];
+      const rni = rniOf(n), amt = Math.round(d.amount*10)/10;
+      const max = Math.max(n.ul || rni*1.6, amt*1.15);
+      const pctW = Math.min(amt/max*100, 100);
+      const overUL = n.ul && amt > n.ul;
+      const nearUL = n.ul && !overUL && amt >= n.ul*0.8;
+      const reached = amt >= rni;
+      const cls = overUL? 'over' : reached? 'ok' : 'low';
+      let msg;
+      if(overUL) msg = `⛔ 已超每日上限 ${n.ul}${n.unit}，请勿继续服用并咨询医生`;
+      else if(nearUL) msg = `⚠️ 接近每日上限（${amt}/${n.ul}${n.unit}），注意总量`;
+      else if(reached) msg = `✓ 已达${n.ai?'适宜':'推荐'}摄入量`;
+      else msg = `还差 ${Math.round((rni-amt)*10)/10}${n.unit} 达标`;
+      html += `<div class="nut">
+        <div class="top"><span class="nm">${n.name}</span><span class="src">${n.ai?'AI 适宜量':'RNI 推荐量'} ${rni}${n.unit}</span></div>
+        <div class="nums"><span class="cur">${amt}</span><span style="font-size:10px">${n.unit}</span><span class="goal">目标 ${rni}${n.unit}</span></div>
+        <div class="track">
+          <div class="fill ${cls}" data-w="${pctW}"></div>
+          <div class="tick rni" style="left:${rni/max*100}%"><i>RNI</i></div>
+          ${n.ul?`<div class="tick ul" style="left:${n.ul/max*100}%"><i>UL ${n.ul}</i></div>`:''}
+        </div>
+        <div class="msg ${overUL?'over':nearUL?'warn-high':reached?'ok':'low'}">${msg}</div>
+        <div class="from">${d.sources.map(s=>`<span>${s.form} ${s.name} +${s.amt}${n.unit}</span>`).join('')}</div>
+      </div>`;
+    });
+  });
+  if(!html) html = `<div class="empty-today"><div class="big">🥗</div>今日暂无营养摄入记录<br><span style="font-size:11px">确认服用含成分的保健品后自动汇总</span></div>`;
+  $('nutList').innerHTML = html;
+  /* 进度条动画 */
+  requestAnimationFrame(()=>setTimeout(()=>{
+    document.querySelectorAll('#nutList .fill').forEach(f=>{ f.style.width = f.dataset.w + '%'; });
+  }, 60));
+}
+function toggleProfile(){
+  PROFILE = PROFILE==='male' ? 'female' : 'male';
+  $('profileVal').textContent = (PROFILE==='male'?'成年男性':'成年女性') + ' ›';
+  renderNutrition();
+  toast('已切换人群档案：' + (PROFILE==='male'?'成年男性（铁 RNI 12mg）':'成年女性（铁 RNI 20mg）'));
+}
+
+/* ==================== Tab 切换 ==================== */
+function switchTab(pg,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  $('pg-'+pg).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  $('tabbar').classList.remove('hide');
+  if(pg==='nutrition') renderNutrition();
+}
+
+/* ==================== 药箱页 ==================== */
+function renderCabinet(){
+  const meds = Object.values(MEDS);
+  const group = (type,title,icon)=>{
+    const list = meds.filter(m=>m.type===type);
+    if(!list.length)return '';
+    return `<div class="sec-t">${icon} ${title}（${list.length}）</div>` + list.map(m=>{
+      const low = m.stock!=null && m.stock/m.dailyDose <= m.lowDays;
+      return `<div class="med-row" onclick="openDetail('${m.id}')">
+        <div class="med-dot" style="background:${m.color}">${m.form}</div>
+        <div class="med-info">
+          <div class="med-name">${m.name} ${m.streak?`<span class="fire">🌱连续${m.streak}天</span>`:''}</div>
+          <div class="med-sub">${m.schedule}${m.inst?` · ${m.inst}`:''}${m.nutrients?` · 含${Object.keys(m.nutrients).length}种成分`:''}</div>
+        </div>
+        <div class="med-stock ${low?'low':''}">${m.stock!=null?`<span class="pill">余 ${m.stock}${m.unit}</span><br>${low?'库存不足':'约'+Math.floor(m.stock/m.dailyDose)+'天'}`:'<span class="pill">不计库存</span>'}</div>
+      </div>`;
+    }).join('');
+  };
+  $('cabinetList').innerHTML =
+    group('medicine','药品','💊') + group('supplement','保健品','🌿') +
+    `<div style="text-align:center;font-size:11px;color:var(--sub);margin-top:18px;font-weight:600">点击条目查看详情 · 左滑可暂停/删除（原型未实现左滑）</div>`;
+}
+
+/* ==================== 详情页 ==================== */
+let detailId=null;
+function openDetail(id){
+  detailId=id;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  $('pg-detail').classList.add('active');
+  $('tabbar').classList.add('hide');
+  renderDetail();
+}
+function closeDetail(){
+  $('pg-detail').classList.remove('active');
+  $('pg-cabinet').classList.add('active');
+  $('tabbar').classList.remove('hide');
+  renderCabinet(); renderToday();
+}
+function renderDetail(){
+  const m = MEDS[detailId]; if(!m)return;
+  const low = m.stock!=null && m.stock/m.dailyDose <= m.lowDays;
+  const evs = EVENTS.filter(e=>e.med===m.id).sort((a,b)=>a.time<b.time?-1:1);
+  $('detailBody').innerHTML = `
+    <div class="det-head" style="background:linear-gradient(135deg,${m.color},${m.color}cc)">
+      <div class="tp">
+        <div class="nm">${m.name}</div>
+        <div class="mt">${m.type==='medicine'?'药品':'保健品'} · ${m.formName} · ${m.range}</div>
+      </div>
+      <div class="big-ic">${m.form}</div>
+    </div>
+    <div class="sec-t">服用计划</div>
+    <div class="card" style="margin:0 16px">
+      <div class="kv"><span class="k">频率</span><span>${m.freqDesc}</span></div>
+      <div class="kv"><span class="k">时间与剂量</span><span>${m.schedule.split('·').slice(1).join('·').trim()}</span></div>
+      ${m.inst?`<div class="kv"><span class="k">服用说明</span><span class="chip">${m.inst}</span></div>`:''}
+      <div class="kv"><span class="k">起止</span><span style="font-size:11px">${m.range}</span></div>
+    </div>
+    ${m.nutrients?`
+    <div class="sec-t">营养成分（每${m.unit}）</div>
+    <div class="card" style="margin:0 16px;padding:14px 16px">
+      ${Object.entries(m.nutrients).map(([nid,amt])=>{const n=DRIS[nid];return `<span class="ing-chip">${n.name} <span style="color:var(--sub)">${amt}${n.unit}</span></span>`;}).join('')}
+      <div style="font-size:10px;color:var(--sub);margin-top:6px;font-weight:600">确认服用后将自动计入「营养」页摄入统计</div>
+    </div>`:''}
+    <div class="sec-t">今日状态</div>
+    <div class="card" style="margin:0 16px">
+      ${evs.length? evs.map(e=>{const sm={taken:'已服用',skipped:'已跳过',missed:'漏服',pending:'待确认'};return `<div class="ev-row"><span class="tm">${e.time}</span><span class="nm">${e.dose}${m.unit}</span><span class="ev-st ${e.status}">${sm[e.status]}</span></div>`;}).join('') : '<div class="ev-row"><span class="nm" style="color:var(--sub)">今日无计划</span></div>'}
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card card"><div class="v">${m.adher}%</div><div class="k">近30天依从率</div></div>
+      ${m.streak?`<div class="stat-card card"><div class="v">${m.streak}🌱</div><div class="k">连续打卡</div></div>`:''}
+    </div>
+    ${m.stock!=null?`
+    <div class="sec-t">库存 ${low?'<span class="chip" style="background:var(--bad-l);color:var(--bad)">偏低</span>':''}</div>
+    <div class="card" style="margin:0 16px">
+      <div class="kv"><span class="k">当前库存（约 ${Math.floor(m.stock/m.dailyDose)} 天）</span>
+        <span class="stock-ctl"><button onclick="adjStock(-1)">−</button><b>${m.stock}${m.unit}</b><button onclick="adjStock(1)">＋</button></span></div>
+      <div class="kv"><span class="k">低库存阈值</span><span>剩 ${m.lowDays} 天时提醒</span></div>
+    </div>`:''}
+    <div style="margin:18px 16px;display:flex;gap:10px">
+      <button class="btn btn-g" style="flex:1" onclick="toast('原型演示：进入编辑表单')">编辑</button>
+      <button class="btn btn-g" style="flex:1;color:var(--acc)" onclick="toast('已暂停：不再生成事件与提醒（演示）')">暂停</button>
+      <button class="btn btn-g" style="flex:1;color:var(--bad)" onclick="toast('二次确认后软删除（演示）')">删除</button>
+    </div>`;
+}
+function adjStock(d){
+  const m=MEDS[detailId]; m.stock=Math.max(0,m.stock+d);
+  renderDetail(); renderToday();
+  toast(`库存已调整：${m.stock}${m.unit}`);
+}
+
+/* ==================== 记录页 ==================== */
+function renderCalendar(){
+  const first = new Date(2026,9,1).getDay();
+  const offset = (first+6)%7;
+  const days = 31;
+  let html = ['一','二','三','四','五','六','日'].map(w=>`<div class="wk">${w}</div>`).join('');
+  for(let i=0;i<offset;i++) html+='<div class="cd blank"></div>';
+  for(let d=1;d<=days;d++){
+    const st = CAL[d] || (d>11?'future':'none');
+    const cls = d===11?'today' : (d>11?'future':'');
+    const dotCls = d===11?'warn' : (st==='future'?'':st);
+    html+=`<div class="cd ${cls} ${d===selDay&&d!==11?'sel':''}" onclick="selectDay(${d})">${d}${dotCls?`<span class="dot ${dotCls}"></span>`:''}</div>`;
+  }
+  $('calGrid').innerHTML = html;
+  renderDayDetail();
+}
+function selectDay(d){ selDay=d; renderCalendar(); }
+function renderDayDetail(){
+  const title = $('dayDetailTitle'), box=$('dayDetail');
+  if(selDay>11){
+    title.textContent=`10月${selDay}日 明细`;
+    box.innerHTML=`<div class="ev-row"><span class="nm" style="color:var(--sub)">未来日期 · 计划将自动生成</span></div>`;
+    return;
+  }
+  title.textContent = selDay===11? '当日明细（今天）' : `10月${selDay}日 明细`;
+  const daySt = CAL[selDay];
+  const rows = DAY_PLAN.map((p,i)=>{
+    const m=MEDS[p.med];
+    let st='taken';
+    if(selDay===11){ const ev=EVENTS.find(e=>e.med===p.med&&e.time===p.time); st=ev?ev.status:'pending'; }
+    else if(daySt==='warn' && i===4) st='skipped';
+    else if(daySt==='bad' && i===6) st='missed';
+    const sm={taken:'已服用',skipped:'已跳过',missed:'漏服',pending:'待确认'};
+    const extra = st==='missed' ? `<button class="fix-btn" onclick="fixMissed(this)">补记</button>` : '';
+    return `<div class="ev-row"><span class="tm">${p.time}</span><span class="nm">${m.form} ${m.name}<small>${p.dose}${m.unit}</small></span><span class="ev-st ${st}">${sm[st]}</span>${extra}</div>`;
+  }).join('');
+  box.innerHTML=rows;
+}
+function fixMissed(btn){
+  const row=btn.closest('.ev-row');
+  const st=row.querySelector('.ev-st');
+  st.className='ev-st taken'; st.textContent='已服用';
+  btn.remove();
+  toast('已补记：实际服用时间 21:48（可修改）');
+}
+function renderAd(){
+  $('adList').innerHTML = Object.values(MEDS).map(m=>`
+    <div class="ad-row"><span class="n">${m.form} ${m.name}</span>
+      <span class="bar"><i style="width:${m.adher}%;background:${m.adher>=90?'var(--pri)':m.adher>=80?'var(--honey-d)':'var(--bad)'}"></i></span>
+      <span class="p">${m.adher}%</span></div>`).join('');
+}
+
+/* ==================== 新增向导（保健品含成分录入步骤） ==================== */
+let wizStep=0, wiz={}, wizSteps=[];
+function wizStepList(){ return wiz.type==='supplement' ? ['选择类型','基本信息','营养成分','频率','时间与剂量','库存'] : ['选择类型','基本信息','频率','时间与剂量','库存']; }
+function openWizard(){
+  wizStep=0;
+  wiz={type:'supplement',name:'',form:'胶囊',color:'#7BA96A',freq:'daily',weekdays:[1,3,5],intervalN:3,cycleOn:5,cycleOff:2,times:[{t:'08:00',dose:1,unit:'粒'}],stockOn:true,stock:60,lowDays:7,ings:[],ingSel:'vd',ingAmt:''};
+  $('wizard').classList.add('open');
+  renderWiz();
+}
+function closeWizard(){$('wizard').classList.remove('open');}
+function renderWiz(){
+  wizSteps = wizStepList();
+  $('wizTitle').textContent = `新增 · ${wizSteps[wizStep]}`;
+  $('wizSteps').innerHTML = wizSteps.map((_,i)=>`<i class="${i<=wizStep?'done':''}"></i>`).join('');
+  const b=$('wizBody'), f=$('wizFoot');
+  const stepName = wizSteps[wizStep];
+  let html='';
+  if(stepName==='选择类型'){
+    html=`<div class="type-cards">
+      <div class="type-card ${wiz.type==='medicine'?'sel':''}" onclick="wiz.type='medicine';renderWiz()"><div class="ic">💊</div><div class="nm">药品</div><div class="ds">处方药 / OTC<br>强调疗程与遵医嘱</div></div>
+      <div class="type-card ${wiz.type==='supplement'?'sel':''}" onclick="wiz.type='supplement';renderWiz()"><div class="ic">🌿</div><div class="nm">保健品</div><div class="ds">维生素 / 补剂<br>可录入成分，对照 DRIs</div></div>
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:var(--sub);text-align:center;font-weight:600">统一数据模型，类型仅影响文案与统计维度</div>`;
+  }
+  else if(stepName==='基本信息'){
+    const forms=['片剂','胶囊','软胶囊','液体','粉剂','软糖','其他'];
+    const colors=['#E07A5F','#DDA54F','#F2CC8F','#5F8D4E','#7BA96A','#8CB4C9','#9B8CB8','#E8A0B4'];
+    html=`<div class="f-label">名称 *</div>
+      <input class="f-input" placeholder="如：维生素D3" value="${wiz.name}" oninput="wiz.name=this.value">
+      <div class="f-label">剂型</div>
+      <div class="opt-row">${forms.map(x=>`<span class="opt ${wiz.form===x?'sel':''}" onclick="wiz.form='${x}';renderWiz()">${x}</span>`).join('')}</div>
+      <div class="f-label">颜色标识（列表快速辨认）</div>
+      <div class="colors">${colors.map(c=>`<i class="${wiz.color===c?'sel':''}" style="background:${c}" onclick="wiz.color='${c}';renderWiz()"></i>`).join('')}</div>
+      <div class="f-label">服用说明（可选）</div>
+      <div class="opt-row">${['随餐','空腹','睡前','晨起'].map(x=>`<span class="opt ${wiz.inst===x?'sel':''}" onclick="wiz.inst=wiz.inst==='${x}'?null:'${x}';renderWiz()">${x}</span>`).join('')}</div>`;
+  }
+  else if(stepName==='营养成分'){
+    html=`<div class="f-label" style="margin-top:6px">每 1 单位（片/粒）所含成分</div>
+      <div class="ing-list">${wiz.ings.map((g,i)=>{const n=DRIS[g.nid];return `<div class="ing-item">${n.name}<span class="u">${g.amt} ${n.unit}</span><button onclick="wiz.ings.splice(${i},1);renderWiz()">✕</button></div>`;}).join('')}</div>
+      <div class="ing-row">
+        <select onchange="wiz.ingSel=this.value">${Object.entries(DRIS).map(([k,n])=>`<option value="${k}" ${wiz.ingSel===k?'selected':''}>${n.name}（${n.unit}）</option>`).join('')}</select>
+        <input type="number" placeholder="含量" value="${wiz.ingAmt}" oninput="wiz.ingAmt=this.value">
+        <button class="btn btn-p" style="padding:10px 16px" onclick="addIng()">＋ 添加</button>
+      </div>
+      <div class="ing-hint">💡 查看产品包装上的「营养成分表 / 配料表」逐项填写。<br>例如某品牌维生素D3标注「每粒含维生素D 25μg（1000IU）」，即选「维生素D」填 25。<br>不录入成分也可使用，只是不参与营养摄入统计。</div>`;
+  }
+  else if(stepName==='频率'){
+    const freqs=[
+      ['daily','📆','每天','每日固定时间服用'],
+      ['weekly','🗓️','每周指定日','如每周一、三、五'],
+      ['every_n_days','🔁','每隔 N 天','适合隔天服用等'],
+      ['cycle','⏸️','周期循环','吃 N 天停 M 天'],
+      ['as_needed','🆘','按需服用','不提醒，随吃随记'],
+    ];
+    html = freqs.map(f=>`<div class="freq-card ${wiz.freq===f[0]?'sel':''}" onclick="wiz.freq='${f[0]}';renderWiz()"><span class="ic">${f[1]}</span><div><div class="n">${f[2]}</div><div class="d">${f[3]}</div></div></div>`).join('');
+    if(wiz.freq==='weekly'){
+      html+=`<div class="sub-cfg"><div class="f-label" style="margin-top:0">选择星期</div><div class="opt-row">${['一','二','三','四','五','六','日'].map((w,i)=>`<span class="opt ${wiz.weekdays.includes(i+1)?'sel':''}" onclick="togWd(${i+1})">${w}</span>`).join('')}</div></div>`;
+    }else if(wiz.freq==='every_n_days'){
+      html+=`<div class="sub-cfg">每隔 <input type="number" value="${wiz.intervalN}" min="2" onchange="wiz.intervalN=this.value"> 天服用一次</div>`;
+    }else if(wiz.freq==='cycle'){
+      html+=`<div class="sub-cfg">吃 <input type="number" value="${wiz.cycleOn}" min="1" onchange="wiz.cycleOn=this.value"> 天 · 停 <input type="number" value="${wiz.cycleOff}" min="1" onchange="wiz.cycleOff=this.value"> 天</div>`;
+    }
+  }
+  else if(stepName==='时间与剂量'){
+    if(wiz.freq==='as_needed'){
+      html=`<div class="empty-today"><div class="big">🆘</div>按需服用不生成计划、不提醒<br><span style="font-size:11px">服用后在药箱点「记一笔」即可</span></div>`;
+    }else{
+      html=`<div class="f-label">时间点与单次剂量（支持早晚不同剂量）</div>` +
+        wiz.times.map((t,i)=>`<div class="time-row">
+          <input type="time" value="${t.t}" onchange="wiz.times[${i}].t=this.value">
+          <input type="number" value="${t.dose}" min="0.5" step="0.5" onchange="wiz.times[${i}].dose=parseFloat(this.value)">
+          <select onchange="wiz.times[${i}].unit=this.value">${['片','粒','mg','g','ml','IU','袋','滴'].map(u=>`<option ${t.unit===u?'selected':''}>${u}</option>`).join('')}</select>
+          ${wiz.times.length>1?`<button class="del" onclick="wiz.times.splice(${i},1);renderWiz()">✕</button>`:''}
+        </div>`).join('') +
+        `<button class="add-line" onclick="wiz.times.push({t:'20:00',dose:1,unit:wiz.times[0].unit});renderWiz()">＋ 添加一个时间点</button>
+        <div class="f-label">开始日期</div><input class="f-input" type="date" value="2026-10-12">
+        <div class="f-label">结束日期（留空 = 长期）</div><input class="f-input" type="date">`;
+    }
+  }
+  else if(stepName==='库存'){
+    html=`<div class="set-group card" style="margin:14px 0 0">
+        <div class="set-row"><div class="l">🧮 启用库存追踪</div><div class="tgl ${wiz.stockOn?'on':''}" onclick="wiz.stockOn=!wiz.stockOn;renderWiz()"></div></div>
+      </div>` +
+      (wiz.stockOn?`<div class="f-label">当前库存数量</div><input class="f-input" type="number" value="${wiz.stock}" oninput="wiz.stock=parseInt(this.value)||0">
+      <div class="f-label">低库存提醒阈值</div>
+      <div class="opt-row">${[3,7,14].map(d=>`<span class="opt ${wiz.lowDays===d?'sel':''}" onclick="wiz.lowDays=${d};renderWiz()">剩 ${d} 天</span>`).join('')}</div>`:
+      `<div style="font-size:11px;color:var(--sub);margin-top:10px;font-weight:600">不追踪库存时，确认服药不会扣减数量</div>`);
+  }
+  b.innerHTML=html;
+  const last = wizStep===wizSteps.length-1;
+  f.innerHTML = `${wizStep>0?`<button class="btn btn-g" onclick="wizStep--;renderWiz()">上一步</button>`:''}
+    <button class="btn btn-p" onclick="wizNext()">${last?'✓ 完成创建':'下一步'}</button>`;
+}
+function addIng(){
+  const amt = parseFloat(wiz.ingAmt);
+  if(!amt || amt<=0){ toast('请填写成分含量'); return; }
+  if(wiz.ings.find(g=>g.nid===wiz.ingSel)){ toast('该成分已添加，可直接编辑'); return; }
+  wiz.ings.push({nid:wiz.ingSel, amt});
+  wiz.ingAmt='';
+  renderWiz();
+}
+function togWd(d){const i=wiz.weekdays.indexOf(d);i>=0?wiz.weekdays.splice(i,1):wiz.weekdays.push(d);renderWiz();}
+function wizNext(){
+  if(wizSteps[wizStep]==='基本信息' && !wiz.name.trim()){ toast('请填写名称'); return; }
+  if(wizStep<wizSteps.length-1){ wizStep++; renderWiz(); return; }
+  const id='n'+Date.now();
+  const freqDesc={daily:'每天',weekly:'每周 '+wiz.weekdays.map(d=>'一二三四五六日'[d-1]).join('/'),every_n_days:'每隔'+wiz.intervalN+'天',cycle:`吃${wiz.cycleOn}停${wiz.cycleOff}`,as_needed:'按需'}[wiz.freq];
+  const timeDesc = wiz.freq==='as_needed' ? '不提醒' : wiz.times.map(t=>t.t).join(' / ');
+  const doseDesc = wiz.freq==='as_needed' ? '' : ' · '+wiz.times[0].dose+wiz.times[0].unit;
+  const nutrients = wiz.ings.length? Object.fromEntries(wiz.ings.map(g=>[g.nid,g.amt])) : null;
+  MEDS[id]={id,name:wiz.name,type:wiz.type,form:wiz.type==='medicine'?'💊':'🌿',formName:wiz.form,color:wiz.color,inst:wiz.inst||'',unit:wiz.times[0].unit,stock:wiz.stockOn?wiz.stock:null,lowDays:wiz.lowDays,dailyDose:wiz.times[0].dose*wiz.times.length,schedule:`${freqDesc} · ${timeDesc}${doseDesc}`,adher:100,streak:0,range:'2026-10-12 ~ 长期',freqDesc,nutrients};
+  closeWizard();
+  switchTab('cabinet',document.querySelector('.tab[data-pg=cabinet]'));
+  renderCabinet();
+  toast(`✓ 已创建「${wiz.name}」${nutrients?` · 含${wiz.ings.length}种成分`:''} · 明日起生效`);
+}
+
+/* ==================== 初始化 ==================== */
+renderToday(); renderCabinet(); renderCalendar(); renderAd(); renderNutrition();
+</script>
+</body>
+</html>
