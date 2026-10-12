@@ -19,12 +19,20 @@ class AppDatabase extends _$AppDatabase {
   static QueryExecutor _openConnection() => driftDatabase(name: 'cyjl.db');
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(nutrients, nutrients.refLabel);
+            await m.addColumn(nutrients, nutrients.altUnit);
+            await m.addColumn(nutrients, nutrients.altFactor);
+            await m.addColumn(nutrients, nutrients.note);
+          }
         },
         beforeOpen: (details) async {
           // WAL + busy_timeout：允许「前台 UI」与「通知后台 isolate」并发读写
@@ -34,13 +42,10 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
-  /// 幂等种子：DRIs 2023 字典（随 App 版本更新，不逐版本迁移）
+  /// 增量播种：按 code upsert。新增营养素随 App 升级自动补齐，不丢用户数据。
   Future<void> _seedNutrients() async {
-    final existing = await select(nutrients).get();
-    if (existing.isEmpty) {
-      await batch((b) {
-        b.insertAll(nutrients, NutrientSeed.all);
-      });
-    }
+    await batch((b) {
+      b.insertAll(nutrients, NutrientSeed.all, mode: InsertMode.insertOrReplace);
+    });
   }
 }

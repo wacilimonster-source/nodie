@@ -84,12 +84,16 @@ class Nutrients extends Table {
   TextColumn get code => text()();
   TextColumn get name => text()();
   TextColumn get unit => text()();
-  TextColumn get category => text()(); // vitamin/mineral/fatty_acid
-  RealColumn get rniMale => real()();
+  TextColumn get category => text()(); // vitamin/mineral/fatty_acid/phyto/other
+  RealColumn get rniMale => real()(); // 目标值（RNI 或 AI 或 SPL）；0 = 无参考（仅记录）
   RealColumn get rniFemale => real().nullable()();
   RealColumn get aiValue => real().nullable()(); // 适宜摄入量（无 RNI 时）
   RealColumn get ulValue => real().nullable()(); // 可耐受最高摄入量
   TextColumn get emoji => text().withDefault(const Constant('🟡'))();
+  TextColumn get refLabel => text().nullable()(); // 参考类型说明：RNI推荐量/AI适宜量/SPL建议值；null=仅记录
+  TextColumn get altUnit => text().nullable()(); // 可选输入单位（如 IU）
+  RealColumn get altFactor => real().nullable()(); // 1 altUnit = altFactor × unit（内部统一为 unit）
+  TextColumn get note => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {code};

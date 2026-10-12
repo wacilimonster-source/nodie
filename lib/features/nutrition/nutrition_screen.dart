@@ -14,6 +14,8 @@ class NutritionScreen extends ConsumerWidget {
     'vitamin': '🍊 维生素',
     'mineral': '🪨 矿物质',
     'fatty_acid': '🐟 脂肪酸',
+    'phyto': '🌿 其他膳食成分',
+    'other': '🧪 其他成分',
   };
 
   @override
