@@ -1,5 +1,7 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:cyjl/notifications/notification_service.dart';
 
 /// 通知网关：把「平台通道调用」抽象出来，便于：
 /// 1) 单元/验收测试注入 Fake，断言"为哪些事件、什么时间、什么 payload 注册了通知"
@@ -7,7 +9,6 @@ import 'package:timezone/timezone.dart' as tz;
 abstract interface class DoseGateway {
   Future<void> init({
     required void Function(String payload) onForeground,
-    required void Function(String payload) onBackground,
   });
 
   Future<bool> requestPermission();
@@ -33,6 +34,18 @@ abstract interface class DoseGateway {
   });
 
   Future<void> cancel(int id);
+}
+
+/// 后台通知 Action 入口。
+/// 必须是**顶层函数**且标注 `@pragma('vm:entry-point')`——
+/// flutter_local_notifications 会在后台 isolate 里按名字查找并调用它；
+/// 若传入匿名闭包会触发 `Null check operator used on a null value` 崩溃。
+@pragma('vm:entry-point')
+void notificationBackgroundResponse(NotificationResponse response) {
+  final payload = response.payload;
+  if (payload != null && payload.isNotEmpty) {
+    NotificationService.handleBackgroundAction(payload);
+  }
 }
 
 // ==================== 真实实现（flutter_local_notifications） ====================
@@ -72,7 +85,6 @@ class FlutterDoseGateway implements DoseGateway {
   @override
   Future<void> init({
     required void Function(String payload) onForeground,
-    required void Function(String payload) onBackground,
   }) async {
     await _plugin.initialize(
       InitializationSettings(
@@ -85,10 +97,8 @@ class FlutterDoseGateway implements DoseGateway {
         final p = r.payload;
         if (p != null && p.isNotEmpty) onForeground(p);
       },
-      onDidReceiveBackgroundNotificationResponse: (r) {
-        final p = r.payload;
-        if (p != null && p.isNotEmpty) onBackground(p);
-      },
+      // 必须传顶层函数（见 notificationBackgroundResponse 注释）
+      onDidReceiveBackgroundNotificationResponse: notificationBackgroundResponse,
     );
     await _plugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -125,33 +135,43 @@ class FlutterDoseGateway implements DoseGateway {
             AndroidNotificationAction('snooze', '💤 稍后', showsUserInterface: false, cancelNotification: true),
           ]
         : null;
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(when, tz.local),
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          channel.id,
-          channel.name,
-          channelDescription: channel.description,
-          importance: silent ? Importance.min : Importance.high,
-          priority: silent ? Priority.min : Priority.high,
-          silent: silent,
-          category: silent ? null : AndroidNotificationCategory.reminder,
-          actions: actions,
-        ),
-        iOS: DarwinNotificationDetails(
-          categoryIdentifier: withActions ? 'dose' : 'maintenance',
-          presentSound: !silent,
-        ),
-      ),
-      payload: payload,
-      androidScheduleMode:
-          silent ? AndroidScheduleMode.inexactAllowWhileIdle : AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: daily ? DateTimeComponents.time : null,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-    );
+
+    Future<void> doSchedule(AndroidScheduleMode mode) => _plugin.zonedSchedule(
+          id,
+          title,
+          body,
+          tz.TZDateTime.from(when, tz.local),
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              channel.id,
+              channel.name,
+              channelDescription: channel.description,
+              importance: silent ? Importance.min : Importance.high,
+              priority: silent ? Priority.min : Priority.high,
+              silent: silent,
+              category: silent ? null : AndroidNotificationCategory.reminder,
+              actions: actions,
+            ),
+            iOS: DarwinNotificationDetails(
+              categoryIdentifier: withActions ? 'dose' : 'maintenance',
+              presentSound: !silent,
+            ),
+          ),
+          payload: payload,
+          androidScheduleMode: mode,
+          matchDateTimeComponents: daily ? DateTimeComponents.time : null,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+
+    try {
+      await doSchedule(
+        silent ? AndroidScheduleMode.inexactAllowWhileIdle : AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    } on PlatformException {
+      // Android 12+ 未授予精确闹钟权限时，回退为非精确，保证提醒仍然发出
+      await doSchedule(AndroidScheduleMode.inexactAllowWhileIdle);
+    }
   }
 
   @override

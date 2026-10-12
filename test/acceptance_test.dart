@@ -33,7 +33,6 @@ class FakeGateway implements DoseGateway {
   @override
   Future<void> init({
     required void Function(String payload) onForeground,
-    required void Function(String payload) onBackground,
   }) async {}
 
   @override

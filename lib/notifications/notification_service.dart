@@ -43,7 +43,6 @@ class NotificationService {
     await ensureTz();
     await gateway.init(
       onForeground: (p) => _actionHandler?.call(p),
-      onBackground: _handleBackground,
     );
   }
 
@@ -156,7 +155,9 @@ class NotificationService {
     await rescheduleAll(db);
   }
 
-  static Future<void> _handleBackground(String payload) async {
+  /// 后台 Action 入口（由顶层 `notificationBackgroundResponse` 调用）。
+  /// 在独立 isolate 中自建数据库连接，不依赖主 isolate 状态。
+  static Future<void> handleBackgroundAction(String payload) async {
     try {
       await _handleAction(payload);
     } catch (_) {
