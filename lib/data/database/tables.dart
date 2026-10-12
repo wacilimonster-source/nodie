@@ -94,7 +94,43 @@ class Nutrients extends Table {
   TextColumn get altUnit => text().nullable()(); // 可选输入单位（如 IU）
   RealColumn get altFactor => real().nullable()(); // 1 altUnit = altFactor × unit（内部统一为 unit）
   TextColumn get note => text().nullable()();
+  BoolColumn get isBuiltin => boolean().withDefault(const Constant(true))(); // false = 用户自定义成分
 
   @override
   Set<Column<Object>> get primaryKey => {code};
+}
+
+/// ============ 保健品配方模板表（内置通用配方 + 用户自建） ============
+@DataClassName('ProductPresetRow')
+class ProductPresets extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get brand => text().nullable()();
+  TextColumn get category => text().withDefault(const Constant('basic'))(); // basic/bone/cardio/...
+  TextColumn get form => text().withDefault(const Constant('片剂'))();
+  TextColumn get emoji => text().withDefault(const Constant('💊'))();
+  TextColumn get color => text().withDefault(const Constant('#7BA96A'))();
+  TextColumn get unit => text().withDefault(const Constant('粒'))();
+  TextColumn get serving => text().nullable()(); // 建议用法
+  TextColumn get source => text().nullable()(); // 数据来源说明
+  TextColumn get sourceDate => text().nullable()();
+  BoolColumn get isBuiltin => boolean().withDefault(const Constant(true))();
+  BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+  IntColumn get sort => integer().withDefault(const Constant(0))();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// ============ 配方成分表（每份含量） ============
+@DataClassName('ProductPresetIngredientRow')
+class ProductPresetIngredients extends Table {
+  TextColumn get id => text()();
+  TextColumn get presetId => text()();
+  TextColumn get nutrientCode => text()();
+  RealColumn get amountPerServing => real()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
 }

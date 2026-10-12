@@ -4,7 +4,9 @@ import 'package:cyjl/data/database/app_database.dart';
 import 'package:cyjl/data/database/daos.dart';
 import 'package:cyjl/data/repositories/event_repository.dart';
 import 'package:cyjl/data/repositories/medication_repository.dart';
+import 'package:cyjl/data/repositories/preset_repository.dart';
 import 'package:cyjl/data/repositories/settings_repository.dart';
+import 'package:cyjl/domain/ai_parse.dart';
 import 'package:cyjl/domain/plan_slot.dart';
 import 'package:cyjl/domain/services.dart';
 import 'package:cyjl/notifications/notification_service.dart';
@@ -34,6 +36,13 @@ final nutritionServiceProvider =
 final medicationRepoProvider =
     Provider<MedicationRepository>((ref) => MedicationRepository(ref.watch(daoProvider)));
 
+final presetRepoProvider =
+    Provider<PresetRepository>((ref) => PresetRepository(ref.watch(daoProvider)));
+
+final aiParserProvider = FutureProvider<AiLabelParser>(
+  (ref) async => AiLabelParser(await ref.watch(nutrientsProvider.future)),
+);
+
 final eventRepoProvider = Provider<EventRepository>(
     (ref) => EventRepository(ref.watch(daoProvider), ref.watch(stockServiceProvider)));
 
@@ -49,6 +58,14 @@ final schedulesProvider = StreamProvider<List<ScheduleRow>>(
 
 final ingredientsProvider = StreamProvider<List<ProductIngredientRow>>(
   (ref) => ref.watch(daoProvider).watchIngredients(),
+);
+
+final presetsProvider = StreamProvider<List<ProductPresetRow>>(
+  (ref) => ref.watch(daoProvider).watchPresets(),
+);
+
+final presetIngredientsProvider = StreamProvider<List<ProductPresetIngredientRow>>(
+  (ref) => ref.watch(daoProvider).watchPresetIngredients(),
 );
 
 final nutrientsProvider = FutureProvider<List<NutrientRow>>(

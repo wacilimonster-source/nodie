@@ -47,6 +47,7 @@ void main() {
         ulValue: 50,
         emoji: '☀️',
         refLabel: 'RNI推荐量',
+        isBuiltin: true,
       ),
       amount: 25,
       sources: [NutrientSource(name: '维生素D3', emoji: '🌞', amount: 25)],

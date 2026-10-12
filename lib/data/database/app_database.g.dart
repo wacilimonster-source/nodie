@@ -2411,6 +2411,16 @@ class $NutrientsTable extends Nutrients
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
       'note', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isBuiltinMeta =
+      const VerificationMeta('isBuiltin');
+  @override
+  late final GeneratedColumn<bool> isBuiltin = GeneratedColumn<bool>(
+      'is_builtin', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_builtin" IN (0, 1))'),
+      defaultValue: const Constant(true));
   @override
   List<GeneratedColumn> get $columns => [
         code,
@@ -2425,7 +2435,8 @@ class $NutrientsTable extends Nutrients
         refLabel,
         altUnit,
         altFactor,
-        note
+        note,
+        isBuiltin
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2499,6 +2510,10 @@ class $NutrientsTable extends Nutrients
       context.handle(
           _noteMeta, note.isAcceptableOrUnknown(data['note']!, _noteMeta));
     }
+    if (data.containsKey('is_builtin')) {
+      context.handle(_isBuiltinMeta,
+          isBuiltin.isAcceptableOrUnknown(data['is_builtin']!, _isBuiltinMeta));
+    }
     return context;
   }
 
@@ -2534,6 +2549,8 @@ class $NutrientsTable extends Nutrients
           .read(DriftSqlType.double, data['${effectivePrefix}alt_factor']),
       note: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}note']),
+      isBuiltin: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_builtin'])!,
     );
   }
 
@@ -2557,6 +2574,7 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
   final String? altUnit;
   final double? altFactor;
   final String? note;
+  final bool isBuiltin;
   const NutrientRow(
       {required this.code,
       required this.name,
@@ -2570,7 +2588,8 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
       this.refLabel,
       this.altUnit,
       this.altFactor,
-      this.note});
+      this.note,
+      required this.isBuiltin});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2601,6 +2620,7 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
     if (!nullToAbsent || note != null) {
       map['note'] = Variable<String>(note);
     }
+    map['is_builtin'] = Variable<bool>(isBuiltin);
     return map;
   }
 
@@ -2631,6 +2651,7 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
           ? const Value.absent()
           : Value(altFactor),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      isBuiltin: Value(isBuiltin),
     );
   }
 
@@ -2651,6 +2672,7 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
       altUnit: serializer.fromJson<String?>(json['altUnit']),
       altFactor: serializer.fromJson<double?>(json['altFactor']),
       note: serializer.fromJson<String?>(json['note']),
+      isBuiltin: serializer.fromJson<bool>(json['isBuiltin']),
     );
   }
   @override
@@ -2670,6 +2692,7 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
       'altUnit': serializer.toJson<String?>(altUnit),
       'altFactor': serializer.toJson<double?>(altFactor),
       'note': serializer.toJson<String?>(note),
+      'isBuiltin': serializer.toJson<bool>(isBuiltin),
     };
   }
 
@@ -2686,7 +2709,8 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
           Value<String?> refLabel = const Value.absent(),
           Value<String?> altUnit = const Value.absent(),
           Value<double?> altFactor = const Value.absent(),
-          Value<String?> note = const Value.absent()}) =>
+          Value<String?> note = const Value.absent(),
+          bool? isBuiltin}) =>
       NutrientRow(
         code: code ?? this.code,
         name: name ?? this.name,
@@ -2701,6 +2725,7 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
         altUnit: altUnit.present ? altUnit.value : this.altUnit,
         altFactor: altFactor.present ? altFactor.value : this.altFactor,
         note: note.present ? note.value : this.note,
+        isBuiltin: isBuiltin ?? this.isBuiltin,
       );
   NutrientRow copyWithCompanion(NutrientsCompanion data) {
     return NutrientRow(
@@ -2717,6 +2742,7 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
       altUnit: data.altUnit.present ? data.altUnit.value : this.altUnit,
       altFactor: data.altFactor.present ? data.altFactor.value : this.altFactor,
       note: data.note.present ? data.note.value : this.note,
+      isBuiltin: data.isBuiltin.present ? data.isBuiltin.value : this.isBuiltin,
     );
   }
 
@@ -2735,14 +2761,28 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
           ..write('refLabel: $refLabel, ')
           ..write('altUnit: $altUnit, ')
           ..write('altFactor: $altFactor, ')
-          ..write('note: $note')
+          ..write('note: $note, ')
+          ..write('isBuiltin: $isBuiltin')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(code, name, unit, category, rniMale,
-      rniFemale, aiValue, ulValue, emoji, refLabel, altUnit, altFactor, note);
+  int get hashCode => Object.hash(
+      code,
+      name,
+      unit,
+      category,
+      rniMale,
+      rniFemale,
+      aiValue,
+      ulValue,
+      emoji,
+      refLabel,
+      altUnit,
+      altFactor,
+      note,
+      isBuiltin);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2759,7 +2799,8 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
           other.refLabel == this.refLabel &&
           other.altUnit == this.altUnit &&
           other.altFactor == this.altFactor &&
-          other.note == this.note);
+          other.note == this.note &&
+          other.isBuiltin == this.isBuiltin);
 }
 
 class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
@@ -2776,6 +2817,7 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
   final Value<String?> altUnit;
   final Value<double?> altFactor;
   final Value<String?> note;
+  final Value<bool> isBuiltin;
   final Value<int> rowid;
   const NutrientsCompanion({
     this.code = const Value.absent(),
@@ -2791,6 +2833,7 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
     this.altUnit = const Value.absent(),
     this.altFactor = const Value.absent(),
     this.note = const Value.absent(),
+    this.isBuiltin = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   NutrientsCompanion.insert({
@@ -2807,6 +2850,7 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
     this.altUnit = const Value.absent(),
     this.altFactor = const Value.absent(),
     this.note = const Value.absent(),
+    this.isBuiltin = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : code = Value(code),
         name = Value(name),
@@ -2827,6 +2871,7 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
     Expression<String>? altUnit,
     Expression<double>? altFactor,
     Expression<String>? note,
+    Expression<bool>? isBuiltin,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2843,6 +2888,7 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
       if (altUnit != null) 'alt_unit': altUnit,
       if (altFactor != null) 'alt_factor': altFactor,
       if (note != null) 'note': note,
+      if (isBuiltin != null) 'is_builtin': isBuiltin,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2861,6 +2907,7 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
       Value<String?>? altUnit,
       Value<double?>? altFactor,
       Value<String?>? note,
+      Value<bool>? isBuiltin,
       Value<int>? rowid}) {
     return NutrientsCompanion(
       code: code ?? this.code,
@@ -2876,6 +2923,7 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
       altUnit: altUnit ?? this.altUnit,
       altFactor: altFactor ?? this.altFactor,
       note: note ?? this.note,
+      isBuiltin: isBuiltin ?? this.isBuiltin,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2922,6 +2970,9 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
     if (note.present) {
       map['note'] = Variable<String>(note.value);
     }
+    if (isBuiltin.present) {
+      map['is_builtin'] = Variable<bool>(isBuiltin.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2944,6 +2995,998 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
           ..write('altUnit: $altUnit, ')
           ..write('altFactor: $altFactor, ')
           ..write('note: $note, ')
+          ..write('isBuiltin: $isBuiltin, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProductPresetsTable extends ProductPresets
+    with TableInfo<$ProductPresetsTable, ProductPresetRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProductPresetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _brandMeta = const VerificationMeta('brand');
+  @override
+  late final GeneratedColumn<String> brand = GeneratedColumn<String>(
+      'brand', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('basic'));
+  static const VerificationMeta _formMeta = const VerificationMeta('form');
+  @override
+  late final GeneratedColumn<String> form = GeneratedColumn<String>(
+      'form', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('片剂'));
+  static const VerificationMeta _emojiMeta = const VerificationMeta('emoji');
+  @override
+  late final GeneratedColumn<String> emoji = GeneratedColumn<String>(
+      'emoji', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('💊'));
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+      'color', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('#7BA96A'));
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+      'unit', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('粒'));
+  static const VerificationMeta _servingMeta =
+      const VerificationMeta('serving');
+  @override
+  late final GeneratedColumn<String> serving = GeneratedColumn<String>(
+      'serving', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sourceDateMeta =
+      const VerificationMeta('sourceDate');
+  @override
+  late final GeneratedColumn<String> sourceDate = GeneratedColumn<String>(
+      'source_date', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isBuiltinMeta =
+      const VerificationMeta('isBuiltin');
+  @override
+  late final GeneratedColumn<bool> isBuiltin = GeneratedColumn<bool>(
+      'is_builtin', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_builtin" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _isFavoriteMeta =
+      const VerificationMeta('isFavorite');
+  @override
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+      'is_favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _sortMeta = const VerificationMeta('sort');
+  @override
+  late final GeneratedColumn<int> sort = GeneratedColumn<int>(
+      'sort', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        brand,
+        category,
+        form,
+        emoji,
+        color,
+        unit,
+        serving,
+        source,
+        sourceDate,
+        isBuiltin,
+        isFavorite,
+        sort,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'product_presets';
+  @override
+  VerificationContext validateIntegrity(Insertable<ProductPresetRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('brand')) {
+      context.handle(
+          _brandMeta, brand.isAcceptableOrUnknown(data['brand']!, _brandMeta));
+    }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    }
+    if (data.containsKey('form')) {
+      context.handle(
+          _formMeta, form.isAcceptableOrUnknown(data['form']!, _formMeta));
+    }
+    if (data.containsKey('emoji')) {
+      context.handle(
+          _emojiMeta, emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta));
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+          _unitMeta, unit.isAcceptableOrUnknown(data['unit']!, _unitMeta));
+    }
+    if (data.containsKey('serving')) {
+      context.handle(_servingMeta,
+          serving.isAcceptableOrUnknown(data['serving']!, _servingMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    }
+    if (data.containsKey('source_date')) {
+      context.handle(
+          _sourceDateMeta,
+          sourceDate.isAcceptableOrUnknown(
+              data['source_date']!, _sourceDateMeta));
+    }
+    if (data.containsKey('is_builtin')) {
+      context.handle(_isBuiltinMeta,
+          isBuiltin.isAcceptableOrUnknown(data['is_builtin']!, _isBuiltinMeta));
+    }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+          _isFavoriteMeta,
+          isFavorite.isAcceptableOrUnknown(
+              data['is_favorite']!, _isFavoriteMeta));
+    }
+    if (data.containsKey('sort')) {
+      context.handle(
+          _sortMeta, sort.isAcceptableOrUnknown(data['sort']!, _sortMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProductPresetRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProductPresetRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      brand: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}brand']),
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      form: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}form'])!,
+      emoji: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}emoji'])!,
+      color: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}color'])!,
+      unit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}unit'])!,
+      serving: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}serving']),
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source']),
+      sourceDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source_date']),
+      isBuiltin: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_builtin'])!,
+      isFavorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_favorite'])!,
+      sort: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sort'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $ProductPresetsTable createAlias(String alias) {
+    return $ProductPresetsTable(attachedDatabase, alias);
+  }
+}
+
+class ProductPresetRow extends DataClass
+    implements Insertable<ProductPresetRow> {
+  final String id;
+  final String name;
+  final String? brand;
+  final String category;
+  final String form;
+  final String emoji;
+  final String color;
+  final String unit;
+  final String? serving;
+  final String? source;
+  final String? sourceDate;
+  final bool isBuiltin;
+  final bool isFavorite;
+  final int sort;
+  final DateTime updatedAt;
+  const ProductPresetRow(
+      {required this.id,
+      required this.name,
+      this.brand,
+      required this.category,
+      required this.form,
+      required this.emoji,
+      required this.color,
+      required this.unit,
+      this.serving,
+      this.source,
+      this.sourceDate,
+      required this.isBuiltin,
+      required this.isFavorite,
+      required this.sort,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || brand != null) {
+      map['brand'] = Variable<String>(brand);
+    }
+    map['category'] = Variable<String>(category);
+    map['form'] = Variable<String>(form);
+    map['emoji'] = Variable<String>(emoji);
+    map['color'] = Variable<String>(color);
+    map['unit'] = Variable<String>(unit);
+    if (!nullToAbsent || serving != null) {
+      map['serving'] = Variable<String>(serving);
+    }
+    if (!nullToAbsent || source != null) {
+      map['source'] = Variable<String>(source);
+    }
+    if (!nullToAbsent || sourceDate != null) {
+      map['source_date'] = Variable<String>(sourceDate);
+    }
+    map['is_builtin'] = Variable<bool>(isBuiltin);
+    map['is_favorite'] = Variable<bool>(isFavorite);
+    map['sort'] = Variable<int>(sort);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ProductPresetsCompanion toCompanion(bool nullToAbsent) {
+    return ProductPresetsCompanion(
+      id: Value(id),
+      name: Value(name),
+      brand:
+          brand == null && nullToAbsent ? const Value.absent() : Value(brand),
+      category: Value(category),
+      form: Value(form),
+      emoji: Value(emoji),
+      color: Value(color),
+      unit: Value(unit),
+      serving: serving == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serving),
+      source:
+          source == null && nullToAbsent ? const Value.absent() : Value(source),
+      sourceDate: sourceDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceDate),
+      isBuiltin: Value(isBuiltin),
+      isFavorite: Value(isFavorite),
+      sort: Value(sort),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ProductPresetRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProductPresetRow(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      brand: serializer.fromJson<String?>(json['brand']),
+      category: serializer.fromJson<String>(json['category']),
+      form: serializer.fromJson<String>(json['form']),
+      emoji: serializer.fromJson<String>(json['emoji']),
+      color: serializer.fromJson<String>(json['color']),
+      unit: serializer.fromJson<String>(json['unit']),
+      serving: serializer.fromJson<String?>(json['serving']),
+      source: serializer.fromJson<String?>(json['source']),
+      sourceDate: serializer.fromJson<String?>(json['sourceDate']),
+      isBuiltin: serializer.fromJson<bool>(json['isBuiltin']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
+      sort: serializer.fromJson<int>(json['sort']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'brand': serializer.toJson<String?>(brand),
+      'category': serializer.toJson<String>(category),
+      'form': serializer.toJson<String>(form),
+      'emoji': serializer.toJson<String>(emoji),
+      'color': serializer.toJson<String>(color),
+      'unit': serializer.toJson<String>(unit),
+      'serving': serializer.toJson<String?>(serving),
+      'source': serializer.toJson<String?>(source),
+      'sourceDate': serializer.toJson<String?>(sourceDate),
+      'isBuiltin': serializer.toJson<bool>(isBuiltin),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
+      'sort': serializer.toJson<int>(sort),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ProductPresetRow copyWith(
+          {String? id,
+          String? name,
+          Value<String?> brand = const Value.absent(),
+          String? category,
+          String? form,
+          String? emoji,
+          String? color,
+          String? unit,
+          Value<String?> serving = const Value.absent(),
+          Value<String?> source = const Value.absent(),
+          Value<String?> sourceDate = const Value.absent(),
+          bool? isBuiltin,
+          bool? isFavorite,
+          int? sort,
+          DateTime? updatedAt}) =>
+      ProductPresetRow(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        brand: brand.present ? brand.value : this.brand,
+        category: category ?? this.category,
+        form: form ?? this.form,
+        emoji: emoji ?? this.emoji,
+        color: color ?? this.color,
+        unit: unit ?? this.unit,
+        serving: serving.present ? serving.value : this.serving,
+        source: source.present ? source.value : this.source,
+        sourceDate: sourceDate.present ? sourceDate.value : this.sourceDate,
+        isBuiltin: isBuiltin ?? this.isBuiltin,
+        isFavorite: isFavorite ?? this.isFavorite,
+        sort: sort ?? this.sort,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  ProductPresetRow copyWithCompanion(ProductPresetsCompanion data) {
+    return ProductPresetRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      brand: data.brand.present ? data.brand.value : this.brand,
+      category: data.category.present ? data.category.value : this.category,
+      form: data.form.present ? data.form.value : this.form,
+      emoji: data.emoji.present ? data.emoji.value : this.emoji,
+      color: data.color.present ? data.color.value : this.color,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      serving: data.serving.present ? data.serving.value : this.serving,
+      source: data.source.present ? data.source.value : this.source,
+      sourceDate:
+          data.sourceDate.present ? data.sourceDate.value : this.sourceDate,
+      isBuiltin: data.isBuiltin.present ? data.isBuiltin.value : this.isBuiltin,
+      isFavorite:
+          data.isFavorite.present ? data.isFavorite.value : this.isFavorite,
+      sort: data.sort.present ? data.sort.value : this.sort,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProductPresetRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('brand: $brand, ')
+          ..write('category: $category, ')
+          ..write('form: $form, ')
+          ..write('emoji: $emoji, ')
+          ..write('color: $color, ')
+          ..write('unit: $unit, ')
+          ..write('serving: $serving, ')
+          ..write('source: $source, ')
+          ..write('sourceDate: $sourceDate, ')
+          ..write('isBuiltin: $isBuiltin, ')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('sort: $sort, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      name,
+      brand,
+      category,
+      form,
+      emoji,
+      color,
+      unit,
+      serving,
+      source,
+      sourceDate,
+      isBuiltin,
+      isFavorite,
+      sort,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProductPresetRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.brand == this.brand &&
+          other.category == this.category &&
+          other.form == this.form &&
+          other.emoji == this.emoji &&
+          other.color == this.color &&
+          other.unit == this.unit &&
+          other.serving == this.serving &&
+          other.source == this.source &&
+          other.sourceDate == this.sourceDate &&
+          other.isBuiltin == this.isBuiltin &&
+          other.isFavorite == this.isFavorite &&
+          other.sort == this.sort &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ProductPresetsCompanion extends UpdateCompanion<ProductPresetRow> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String?> brand;
+  final Value<String> category;
+  final Value<String> form;
+  final Value<String> emoji;
+  final Value<String> color;
+  final Value<String> unit;
+  final Value<String?> serving;
+  final Value<String?> source;
+  final Value<String?> sourceDate;
+  final Value<bool> isBuiltin;
+  final Value<bool> isFavorite;
+  final Value<int> sort;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ProductPresetsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.brand = const Value.absent(),
+    this.category = const Value.absent(),
+    this.form = const Value.absent(),
+    this.emoji = const Value.absent(),
+    this.color = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.serving = const Value.absent(),
+    this.source = const Value.absent(),
+    this.sourceDate = const Value.absent(),
+    this.isBuiltin = const Value.absent(),
+    this.isFavorite = const Value.absent(),
+    this.sort = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProductPresetsCompanion.insert({
+    required String id,
+    required String name,
+    this.brand = const Value.absent(),
+    this.category = const Value.absent(),
+    this.form = const Value.absent(),
+    this.emoji = const Value.absent(),
+    this.color = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.serving = const Value.absent(),
+    this.source = const Value.absent(),
+    this.sourceDate = const Value.absent(),
+    this.isBuiltin = const Value.absent(),
+    this.isFavorite = const Value.absent(),
+    this.sort = const Value.absent(),
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        name = Value(name),
+        updatedAt = Value(updatedAt);
+  static Insertable<ProductPresetRow> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? brand,
+    Expression<String>? category,
+    Expression<String>? form,
+    Expression<String>? emoji,
+    Expression<String>? color,
+    Expression<String>? unit,
+    Expression<String>? serving,
+    Expression<String>? source,
+    Expression<String>? sourceDate,
+    Expression<bool>? isBuiltin,
+    Expression<bool>? isFavorite,
+    Expression<int>? sort,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (brand != null) 'brand': brand,
+      if (category != null) 'category': category,
+      if (form != null) 'form': form,
+      if (emoji != null) 'emoji': emoji,
+      if (color != null) 'color': color,
+      if (unit != null) 'unit': unit,
+      if (serving != null) 'serving': serving,
+      if (source != null) 'source': source,
+      if (sourceDate != null) 'source_date': sourceDate,
+      if (isBuiltin != null) 'is_builtin': isBuiltin,
+      if (isFavorite != null) 'is_favorite': isFavorite,
+      if (sort != null) 'sort': sort,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProductPresetsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? name,
+      Value<String?>? brand,
+      Value<String>? category,
+      Value<String>? form,
+      Value<String>? emoji,
+      Value<String>? color,
+      Value<String>? unit,
+      Value<String?>? serving,
+      Value<String?>? source,
+      Value<String?>? sourceDate,
+      Value<bool>? isBuiltin,
+      Value<bool>? isFavorite,
+      Value<int>? sort,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return ProductPresetsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      brand: brand ?? this.brand,
+      category: category ?? this.category,
+      form: form ?? this.form,
+      emoji: emoji ?? this.emoji,
+      color: color ?? this.color,
+      unit: unit ?? this.unit,
+      serving: serving ?? this.serving,
+      source: source ?? this.source,
+      sourceDate: sourceDate ?? this.sourceDate,
+      isBuiltin: isBuiltin ?? this.isBuiltin,
+      isFavorite: isFavorite ?? this.isFavorite,
+      sort: sort ?? this.sort,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (brand.present) {
+      map['brand'] = Variable<String>(brand.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (form.present) {
+      map['form'] = Variable<String>(form.value);
+    }
+    if (emoji.present) {
+      map['emoji'] = Variable<String>(emoji.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (serving.present) {
+      map['serving'] = Variable<String>(serving.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (sourceDate.present) {
+      map['source_date'] = Variable<String>(sourceDate.value);
+    }
+    if (isBuiltin.present) {
+      map['is_builtin'] = Variable<bool>(isBuiltin.value);
+    }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
+    if (sort.present) {
+      map['sort'] = Variable<int>(sort.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProductPresetsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('brand: $brand, ')
+          ..write('category: $category, ')
+          ..write('form: $form, ')
+          ..write('emoji: $emoji, ')
+          ..write('color: $color, ')
+          ..write('unit: $unit, ')
+          ..write('serving: $serving, ')
+          ..write('source: $source, ')
+          ..write('sourceDate: $sourceDate, ')
+          ..write('isBuiltin: $isBuiltin, ')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('sort: $sort, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProductPresetIngredientsTable extends ProductPresetIngredients
+    with TableInfo<$ProductPresetIngredientsTable, ProductPresetIngredientRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProductPresetIngredientsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _presetIdMeta =
+      const VerificationMeta('presetId');
+  @override
+  late final GeneratedColumn<String> presetId = GeneratedColumn<String>(
+      'preset_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nutrientCodeMeta =
+      const VerificationMeta('nutrientCode');
+  @override
+  late final GeneratedColumn<String> nutrientCode = GeneratedColumn<String>(
+      'nutrient_code', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _amountPerServingMeta =
+      const VerificationMeta('amountPerServing');
+  @override
+  late final GeneratedColumn<double> amountPerServing = GeneratedColumn<double>(
+      'amount_per_serving', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, presetId, nutrientCode, amountPerServing];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'product_preset_ingredients';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ProductPresetIngredientRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('preset_id')) {
+      context.handle(_presetIdMeta,
+          presetId.isAcceptableOrUnknown(data['preset_id']!, _presetIdMeta));
+    } else if (isInserting) {
+      context.missing(_presetIdMeta);
+    }
+    if (data.containsKey('nutrient_code')) {
+      context.handle(
+          _nutrientCodeMeta,
+          nutrientCode.isAcceptableOrUnknown(
+              data['nutrient_code']!, _nutrientCodeMeta));
+    } else if (isInserting) {
+      context.missing(_nutrientCodeMeta);
+    }
+    if (data.containsKey('amount_per_serving')) {
+      context.handle(
+          _amountPerServingMeta,
+          amountPerServing.isAcceptableOrUnknown(
+              data['amount_per_serving']!, _amountPerServingMeta));
+    } else if (isInserting) {
+      context.missing(_amountPerServingMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProductPresetIngredientRow map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProductPresetIngredientRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      presetId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}preset_id'])!,
+      nutrientCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nutrient_code'])!,
+      amountPerServing: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}amount_per_serving'])!,
+    );
+  }
+
+  @override
+  $ProductPresetIngredientsTable createAlias(String alias) {
+    return $ProductPresetIngredientsTable(attachedDatabase, alias);
+  }
+}
+
+class ProductPresetIngredientRow extends DataClass
+    implements Insertable<ProductPresetIngredientRow> {
+  final String id;
+  final String presetId;
+  final String nutrientCode;
+  final double amountPerServing;
+  const ProductPresetIngredientRow(
+      {required this.id,
+      required this.presetId,
+      required this.nutrientCode,
+      required this.amountPerServing});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['preset_id'] = Variable<String>(presetId);
+    map['nutrient_code'] = Variable<String>(nutrientCode);
+    map['amount_per_serving'] = Variable<double>(amountPerServing);
+    return map;
+  }
+
+  ProductPresetIngredientsCompanion toCompanion(bool nullToAbsent) {
+    return ProductPresetIngredientsCompanion(
+      id: Value(id),
+      presetId: Value(presetId),
+      nutrientCode: Value(nutrientCode),
+      amountPerServing: Value(amountPerServing),
+    );
+  }
+
+  factory ProductPresetIngredientRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProductPresetIngredientRow(
+      id: serializer.fromJson<String>(json['id']),
+      presetId: serializer.fromJson<String>(json['presetId']),
+      nutrientCode: serializer.fromJson<String>(json['nutrientCode']),
+      amountPerServing: serializer.fromJson<double>(json['amountPerServing']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'presetId': serializer.toJson<String>(presetId),
+      'nutrientCode': serializer.toJson<String>(nutrientCode),
+      'amountPerServing': serializer.toJson<double>(amountPerServing),
+    };
+  }
+
+  ProductPresetIngredientRow copyWith(
+          {String? id,
+          String? presetId,
+          String? nutrientCode,
+          double? amountPerServing}) =>
+      ProductPresetIngredientRow(
+        id: id ?? this.id,
+        presetId: presetId ?? this.presetId,
+        nutrientCode: nutrientCode ?? this.nutrientCode,
+        amountPerServing: amountPerServing ?? this.amountPerServing,
+      );
+  ProductPresetIngredientRow copyWithCompanion(
+      ProductPresetIngredientsCompanion data) {
+    return ProductPresetIngredientRow(
+      id: data.id.present ? data.id.value : this.id,
+      presetId: data.presetId.present ? data.presetId.value : this.presetId,
+      nutrientCode: data.nutrientCode.present
+          ? data.nutrientCode.value
+          : this.nutrientCode,
+      amountPerServing: data.amountPerServing.present
+          ? data.amountPerServing.value
+          : this.amountPerServing,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProductPresetIngredientRow(')
+          ..write('id: $id, ')
+          ..write('presetId: $presetId, ')
+          ..write('nutrientCode: $nutrientCode, ')
+          ..write('amountPerServing: $amountPerServing')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, presetId, nutrientCode, amountPerServing);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProductPresetIngredientRow &&
+          other.id == this.id &&
+          other.presetId == this.presetId &&
+          other.nutrientCode == this.nutrientCode &&
+          other.amountPerServing == this.amountPerServing);
+}
+
+class ProductPresetIngredientsCompanion
+    extends UpdateCompanion<ProductPresetIngredientRow> {
+  final Value<String> id;
+  final Value<String> presetId;
+  final Value<String> nutrientCode;
+  final Value<double> amountPerServing;
+  final Value<int> rowid;
+  const ProductPresetIngredientsCompanion({
+    this.id = const Value.absent(),
+    this.presetId = const Value.absent(),
+    this.nutrientCode = const Value.absent(),
+    this.amountPerServing = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProductPresetIngredientsCompanion.insert({
+    required String id,
+    required String presetId,
+    required String nutrientCode,
+    required double amountPerServing,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        presetId = Value(presetId),
+        nutrientCode = Value(nutrientCode),
+        amountPerServing = Value(amountPerServing);
+  static Insertable<ProductPresetIngredientRow> custom({
+    Expression<String>? id,
+    Expression<String>? presetId,
+    Expression<String>? nutrientCode,
+    Expression<double>? amountPerServing,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (presetId != null) 'preset_id': presetId,
+      if (nutrientCode != null) 'nutrient_code': nutrientCode,
+      if (amountPerServing != null) 'amount_per_serving': amountPerServing,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProductPresetIngredientsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? presetId,
+      Value<String>? nutrientCode,
+      Value<double>? amountPerServing,
+      Value<int>? rowid}) {
+    return ProductPresetIngredientsCompanion(
+      id: id ?? this.id,
+      presetId: presetId ?? this.presetId,
+      nutrientCode: nutrientCode ?? this.nutrientCode,
+      amountPerServing: amountPerServing ?? this.amountPerServing,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (presetId.present) {
+      map['preset_id'] = Variable<String>(presetId.value);
+    }
+    if (nutrientCode.present) {
+      map['nutrient_code'] = Variable<String>(nutrientCode.value);
+    }
+    if (amountPerServing.present) {
+      map['amount_per_serving'] = Variable<double>(amountPerServing.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProductPresetIngredientsCompanion(')
+          ..write('id: $id, ')
+          ..write('presetId: $presetId, ')
+          ..write('nutrientCode: $nutrientCode, ')
+          ..write('amountPerServing: $amountPerServing, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2959,13 +4002,23 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ProductIngredientsTable productIngredients =
       $ProductIngredientsTable(this);
   late final $NutrientsTable nutrients = $NutrientsTable(this);
+  late final $ProductPresetsTable productPresets = $ProductPresetsTable(this);
+  late final $ProductPresetIngredientsTable productPresetIngredients =
+      $ProductPresetIngredientsTable(this);
   late final AppDao appDao = AppDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [medications, schedules, intakeEvents, productIngredients, nutrients];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+        medications,
+        schedules,
+        intakeEvents,
+        productIngredients,
+        nutrients,
+        productPresets,
+        productPresetIngredients
+      ];
 }
 
 typedef $$MedicationsTableCreateCompanionBuilder = MedicationsCompanion
@@ -4001,6 +5054,7 @@ typedef $$NutrientsTableCreateCompanionBuilder = NutrientsCompanion Function({
   Value<String?> altUnit,
   Value<double?> altFactor,
   Value<String?> note,
+  Value<bool> isBuiltin,
   Value<int> rowid,
 });
 typedef $$NutrientsTableUpdateCompanionBuilder = NutrientsCompanion Function({
@@ -4017,6 +5071,7 @@ typedef $$NutrientsTableUpdateCompanionBuilder = NutrientsCompanion Function({
   Value<String?> altUnit,
   Value<double?> altFactor,
   Value<String?> note,
+  Value<bool> isBuiltin,
   Value<int> rowid,
 });
 
@@ -4085,6 +5140,11 @@ class $$NutrientsTableFilterComposer
 
   ColumnFilters<String> get note => $state.composableBuilder(
       column: $state.table.note,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isBuiltin => $state.composableBuilder(
+      column: $state.table.isBuiltin,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 }
@@ -4156,6 +5216,11 @@ class $$NutrientsTableOrderingComposer
       column: $state.table.note,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isBuiltin => $state.composableBuilder(
+      column: $state.table.isBuiltin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
 class $$NutrientsTableTableManager extends RootTableManager<
@@ -4191,6 +5256,7 @@ class $$NutrientsTableTableManager extends RootTableManager<
             Value<String?> altUnit = const Value.absent(),
             Value<double?> altFactor = const Value.absent(),
             Value<String?> note = const Value.absent(),
+            Value<bool> isBuiltin = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               NutrientsCompanion(
@@ -4207,6 +5273,7 @@ class $$NutrientsTableTableManager extends RootTableManager<
             altUnit: altUnit,
             altFactor: altFactor,
             note: note,
+            isBuiltin: isBuiltin,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -4223,6 +5290,7 @@ class $$NutrientsTableTableManager extends RootTableManager<
             Value<String?> altUnit = const Value.absent(),
             Value<double?> altFactor = const Value.absent(),
             Value<String?> note = const Value.absent(),
+            Value<bool> isBuiltin = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               NutrientsCompanion.insert(
@@ -4239,6 +5307,7 @@ class $$NutrientsTableTableManager extends RootTableManager<
             altUnit: altUnit,
             altFactor: altFactor,
             note: note,
+            isBuiltin: isBuiltin,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -4259,6 +5328,459 @@ typedef $$NutrientsTableProcessedTableManager = ProcessedTableManager<
     (NutrientRow, BaseReferences<_$AppDatabase, $NutrientsTable, NutrientRow>),
     NutrientRow,
     PrefetchHooks Function()>;
+typedef $$ProductPresetsTableCreateCompanionBuilder = ProductPresetsCompanion
+    Function({
+  required String id,
+  required String name,
+  Value<String?> brand,
+  Value<String> category,
+  Value<String> form,
+  Value<String> emoji,
+  Value<String> color,
+  Value<String> unit,
+  Value<String?> serving,
+  Value<String?> source,
+  Value<String?> sourceDate,
+  Value<bool> isBuiltin,
+  Value<bool> isFavorite,
+  Value<int> sort,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$ProductPresetsTableUpdateCompanionBuilder = ProductPresetsCompanion
+    Function({
+  Value<String> id,
+  Value<String> name,
+  Value<String?> brand,
+  Value<String> category,
+  Value<String> form,
+  Value<String> emoji,
+  Value<String> color,
+  Value<String> unit,
+  Value<String?> serving,
+  Value<String?> source,
+  Value<String?> sourceDate,
+  Value<bool> isBuiltin,
+  Value<bool> isFavorite,
+  Value<int> sort,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$ProductPresetsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ProductPresetsTable> {
+  $$ProductPresetsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get brand => $state.composableBuilder(
+      column: $state.table.brand,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get category => $state.composableBuilder(
+      column: $state.table.category,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get form => $state.composableBuilder(
+      column: $state.table.form,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get emoji => $state.composableBuilder(
+      column: $state.table.emoji,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get color => $state.composableBuilder(
+      column: $state.table.color,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get unit => $state.composableBuilder(
+      column: $state.table.unit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get serving => $state.composableBuilder(
+      column: $state.table.serving,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get sourceDate => $state.composableBuilder(
+      column: $state.table.sourceDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isBuiltin => $state.composableBuilder(
+      column: $state.table.isBuiltin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isFavorite => $state.composableBuilder(
+      column: $state.table.isFavorite,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get sort => $state.composableBuilder(
+      column: $state.table.sort,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$ProductPresetsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ProductPresetsTable> {
+  $$ProductPresetsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get brand => $state.composableBuilder(
+      column: $state.table.brand,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get category => $state.composableBuilder(
+      column: $state.table.category,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get form => $state.composableBuilder(
+      column: $state.table.form,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get emoji => $state.composableBuilder(
+      column: $state.table.emoji,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get color => $state.composableBuilder(
+      column: $state.table.color,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get unit => $state.composableBuilder(
+      column: $state.table.unit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get serving => $state.composableBuilder(
+      column: $state.table.serving,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get sourceDate => $state.composableBuilder(
+      column: $state.table.sourceDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isBuiltin => $state.composableBuilder(
+      column: $state.table.isBuiltin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isFavorite => $state.composableBuilder(
+      column: $state.table.isFavorite,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get sort => $state.composableBuilder(
+      column: $state.table.sort,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+class $$ProductPresetsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ProductPresetsTable,
+    ProductPresetRow,
+    $$ProductPresetsTableFilterComposer,
+    $$ProductPresetsTableOrderingComposer,
+    $$ProductPresetsTableCreateCompanionBuilder,
+    $$ProductPresetsTableUpdateCompanionBuilder,
+    (
+      ProductPresetRow,
+      BaseReferences<_$AppDatabase, $ProductPresetsTable, ProductPresetRow>
+    ),
+    ProductPresetRow,
+    PrefetchHooks Function()> {
+  $$ProductPresetsTableTableManager(
+      _$AppDatabase db, $ProductPresetsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$ProductPresetsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$ProductPresetsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> brand = const Value.absent(),
+            Value<String> category = const Value.absent(),
+            Value<String> form = const Value.absent(),
+            Value<String> emoji = const Value.absent(),
+            Value<String> color = const Value.absent(),
+            Value<String> unit = const Value.absent(),
+            Value<String?> serving = const Value.absent(),
+            Value<String?> source = const Value.absent(),
+            Value<String?> sourceDate = const Value.absent(),
+            Value<bool> isBuiltin = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
+            Value<int> sort = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ProductPresetsCompanion(
+            id: id,
+            name: name,
+            brand: brand,
+            category: category,
+            form: form,
+            emoji: emoji,
+            color: color,
+            unit: unit,
+            serving: serving,
+            source: source,
+            sourceDate: sourceDate,
+            isBuiltin: isBuiltin,
+            isFavorite: isFavorite,
+            sort: sort,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String name,
+            Value<String?> brand = const Value.absent(),
+            Value<String> category = const Value.absent(),
+            Value<String> form = const Value.absent(),
+            Value<String> emoji = const Value.absent(),
+            Value<String> color = const Value.absent(),
+            Value<String> unit = const Value.absent(),
+            Value<String?> serving = const Value.absent(),
+            Value<String?> source = const Value.absent(),
+            Value<String?> sourceDate = const Value.absent(),
+            Value<bool> isBuiltin = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
+            Value<int> sort = const Value.absent(),
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ProductPresetsCompanion.insert(
+            id: id,
+            name: name,
+            brand: brand,
+            category: category,
+            form: form,
+            emoji: emoji,
+            color: color,
+            unit: unit,
+            serving: serving,
+            source: source,
+            sourceDate: sourceDate,
+            isBuiltin: isBuiltin,
+            isFavorite: isFavorite,
+            sort: sort,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ProductPresetsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ProductPresetsTable,
+    ProductPresetRow,
+    $$ProductPresetsTableFilterComposer,
+    $$ProductPresetsTableOrderingComposer,
+    $$ProductPresetsTableCreateCompanionBuilder,
+    $$ProductPresetsTableUpdateCompanionBuilder,
+    (
+      ProductPresetRow,
+      BaseReferences<_$AppDatabase, $ProductPresetsTable, ProductPresetRow>
+    ),
+    ProductPresetRow,
+    PrefetchHooks Function()>;
+typedef $$ProductPresetIngredientsTableCreateCompanionBuilder
+    = ProductPresetIngredientsCompanion Function({
+  required String id,
+  required String presetId,
+  required String nutrientCode,
+  required double amountPerServing,
+  Value<int> rowid,
+});
+typedef $$ProductPresetIngredientsTableUpdateCompanionBuilder
+    = ProductPresetIngredientsCompanion Function({
+  Value<String> id,
+  Value<String> presetId,
+  Value<String> nutrientCode,
+  Value<double> amountPerServing,
+  Value<int> rowid,
+});
+
+class $$ProductPresetIngredientsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ProductPresetIngredientsTable> {
+  $$ProductPresetIngredientsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get presetId => $state.composableBuilder(
+      column: $state.table.presetId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get nutrientCode => $state.composableBuilder(
+      column: $state.table.nutrientCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get amountPerServing => $state.composableBuilder(
+      column: $state.table.amountPerServing,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$ProductPresetIngredientsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ProductPresetIngredientsTable> {
+  $$ProductPresetIngredientsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get presetId => $state.composableBuilder(
+      column: $state.table.presetId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get nutrientCode => $state.composableBuilder(
+      column: $state.table.nutrientCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get amountPerServing => $state.composableBuilder(
+      column: $state.table.amountPerServing,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+class $$ProductPresetIngredientsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ProductPresetIngredientsTable,
+    ProductPresetIngredientRow,
+    $$ProductPresetIngredientsTableFilterComposer,
+    $$ProductPresetIngredientsTableOrderingComposer,
+    $$ProductPresetIngredientsTableCreateCompanionBuilder,
+    $$ProductPresetIngredientsTableUpdateCompanionBuilder,
+    (
+      ProductPresetIngredientRow,
+      BaseReferences<_$AppDatabase, $ProductPresetIngredientsTable,
+          ProductPresetIngredientRow>
+    ),
+    ProductPresetIngredientRow,
+    PrefetchHooks Function()> {
+  $$ProductPresetIngredientsTableTableManager(
+      _$AppDatabase db, $ProductPresetIngredientsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$ProductPresetIngredientsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$ProductPresetIngredientsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> presetId = const Value.absent(),
+            Value<String> nutrientCode = const Value.absent(),
+            Value<double> amountPerServing = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ProductPresetIngredientsCompanion(
+            id: id,
+            presetId: presetId,
+            nutrientCode: nutrientCode,
+            amountPerServing: amountPerServing,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String presetId,
+            required String nutrientCode,
+            required double amountPerServing,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ProductPresetIngredientsCompanion.insert(
+            id: id,
+            presetId: presetId,
+            nutrientCode: nutrientCode,
+            amountPerServing: amountPerServing,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ProductPresetIngredientsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $ProductPresetIngredientsTable,
+        ProductPresetIngredientRow,
+        $$ProductPresetIngredientsTableFilterComposer,
+        $$ProductPresetIngredientsTableOrderingComposer,
+        $$ProductPresetIngredientsTableCreateCompanionBuilder,
+        $$ProductPresetIngredientsTableUpdateCompanionBuilder,
+        (
+          ProductPresetIngredientRow,
+          BaseReferences<_$AppDatabase, $ProductPresetIngredientsTable,
+              ProductPresetIngredientRow>
+        ),
+        ProductPresetIngredientRow,
+        PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4273,4 +5795,9 @@ class $AppDatabaseManager {
       $$ProductIngredientsTableTableManager(_db, _db.productIngredients);
   $$NutrientsTableTableManager get nutrients =>
       $$NutrientsTableTableManager(_db, _db.nutrients);
+  $$ProductPresetsTableTableManager get productPresets =>
+      $$ProductPresetsTableTableManager(_db, _db.productPresets);
+  $$ProductPresetIngredientsTableTableManager get productPresetIngredients =>
+      $$ProductPresetIngredientsTableTableManager(
+          _db, _db.productPresetIngredients);
 }

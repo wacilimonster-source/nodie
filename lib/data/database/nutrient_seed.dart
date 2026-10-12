@@ -52,6 +52,7 @@ abstract final class NutrientSeed {
     _n('dha', 'DHA（鱼油）', 'mg', 'fatty_acid', 0, 0, null, null, '🐟',
         note: '鱼油主要成分；与 EPA 合计建议 ≥250mg'),
     _n('ala', 'α-亚麻酸', 'mg', 'fatty_acid', 0, 0, null, null, '🌱'),
+    _n('gla', 'γ-亚麻酸（月见草油）', 'mg', 'fatty_acid', 0, 0, null, null, '🌼'),
 
     // ============ 其他膳食成分（植物化学物 / 氨基酸衍生物等，DRIs 第15章；仅记录）============
     _n('lutein', '叶黄素', 'mg', 'phyto', 0, 0, null, null, '👁️'),
@@ -90,6 +91,10 @@ abstract final class NutrientSeed {
     _n('inositol', '肌醇', 'mg', 'other', 0, 0, null, null, '⭕'),
     _n('theanine', '茶氨酸', 'mg', 'other', 0, 0, null, null, '🍵'),
     _n('grape_seed', '葡萄籽提取物', 'mg', 'other', 0, 0, null, null, '🍇'),
+    _n('silymarin', '水飞蓟素（奶蓟草）', 'mg', 'phyto', 0, 0, null, null, '🌿'),
+    _n('propolis', '蜂胶', 'mg', 'phyto', 0, 0, null, null, '🐝'),
+    _n('cranberry', '蔓越莓提取物', 'mg', 'phyto', 0, 0, null, null, '🍒'),
+    _n('nattokinase', '纳豆激酶', 'FU', 'other', 0, 0, null, null, '🫘'),
   ];
 
   static NutrientRow _n(
@@ -122,6 +127,7 @@ abstract final class NutrientSeed {
       altUnit: altUnit,
       altFactor: altFactor,
       note: note,
+      isBuiltin: true,
     );
   }
 }

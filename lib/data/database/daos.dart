@@ -4,7 +4,17 @@ import 'package:cyjl/data/database/tables.dart';
 
 part 'daos.g.dart';
 
-@DriftAccessor(tables: [Medications, Schedules, IntakeEvents, ProductIngredients, Nutrients])
+@DriftAccessor(
+  tables: [
+    Medications,
+    Schedules,
+    IntakeEvents,
+    ProductIngredients,
+    Nutrients,
+    ProductPresets,
+    ProductPresetIngredients,
+  ],
+)
 class AppDao extends DatabaseAccessor<AppDatabase> with _$AppDaoMixin {
   AppDao(super.db);
 
@@ -201,4 +211,55 @@ class AppDao extends DatabaseAccessor<AppDatabase> with _$AppDaoMixin {
       await delete(medications).go();
     });
   }
+
+  // ==================== 配方模板 ProductPresets ====================
+
+  Stream<List<ProductPresetRow>> watchPresets() =>
+      (select(productPresets)
+            ..orderBy([
+              (t) => OrderingTerm.desc(t.isFavorite),
+              (t) => OrderingTerm.asc(t.category),
+              (t) => OrderingTerm.asc(t.id),
+            ]))
+          .watch();
+
+  Future<ProductPresetRow?> presetById(String id) =>
+      (select(productPresets)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  Future<List<ProductPresetIngredientRow>> presetIngredients(String presetId) =>
+      (select(productPresetIngredients)..where((t) => t.presetId.equals(presetId))).get();
+
+  Stream<List<ProductPresetIngredientRow>> watchPresetIngredients() =>
+      select(productPresetIngredients).watch();
+
+  Future<void> upsertPreset(ProductPresetRow row) =>
+      into(productPresets).insertOnConflictUpdate(row);
+
+  Future<void> replacePresetIngredients(
+    String presetId,
+    List<ProductPresetIngredientRow> rows,
+  ) async {
+    await transaction(() async {
+      await (delete(productPresetIngredients)..where((t) => t.presetId.equals(presetId))).go();
+      await batch((b) {
+        b.insertAll(productPresetIngredients, rows, mode: InsertMode.insertOrReplace);
+      });
+    });
+  }
+
+  Future<void> deletePreset(String id) async {
+    await transaction(() async {
+      await (delete(productPresetIngredients)..where((t) => t.presetId.equals(id))).go();
+      await (delete(productPresets)..where((t) => t.id.equals(id))).go();
+    });
+  }
+
+  Future<void> setPresetFavorite(String id, bool favorite) =>
+      (update(productPresets)..where((t) => t.id.equals(id)))
+          .write(ProductPresetsCompanion(isFavorite: Value(favorite)));
+
+  // ==================== 用户自定义成分 ====================
+
+  Future<void> upsertCustomNutrient(NutrientRow row) =>
+      into(nutrients).insertOnConflictUpdate(row);
 }

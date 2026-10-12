@@ -10,4 +10,7 @@ mixin _$AppDaoMixin on DatabaseAccessor<AppDatabase> {
   $ProductIngredientsTable get productIngredients =>
       attachedDatabase.productIngredients;
   $NutrientsTable get nutrients => attachedDatabase.nutrients;
+  $ProductPresetsTable get productPresets => attachedDatabase.productPresets;
+  $ProductPresetIngredientsTable get productPresetIngredients =>
+      attachedDatabase.productPresetIngredients;
 }

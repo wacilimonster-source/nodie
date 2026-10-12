@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cyjl/app/providers.dart';
 import 'package:cyjl/app/theme/app_colors.dart';
 import 'package:cyjl/core/enums.dart';
 import 'package:cyjl/data/database/app_database.dart';
 import 'package:cyjl/data/repositories/medication_repository.dart';
+import 'package:cyjl/domain/ai_parse.dart';
+import 'package:cyjl/domain/ai_prompt.dart';
 import 'package:cyjl/domain/plan_slot.dart';
 import 'package:cyjl/shared/widgets/pop_button.dart';
 
@@ -54,10 +57,20 @@ class _AddMedScreenState extends ConsumerState<AddMedScreen> {
   bool _saving = false;
   bool _prefillDone = false;
 
+  // 快速填充（模板 / AI 解析）
+  String _fillMode = 'blank'; // blank | template | ai
+  String? _selectedPresetId;
+  String _tplQuery = '';
+  final TextEditingController _aiCtrl = TextEditingController();
+  final TextEditingController _tplNameCtrl = TextEditingController();
+  ParseOutcome? _parseOutcome;
+  bool _aiBusy = false;
+  bool _saveAsTemplate = false;
+
   bool get _isEdit => widget.editMedId != null;
 
   List<String> get _steps => _type == MedType.supplement
-      ? const ['选择类型', '基本信息', '营养成分', '频率', '时间与剂量', '库存']
+      ? const ['选择类型', '选择方式', '基本信息', '营养成分', '频率', '时间与剂量', '库存']
       : const ['选择类型', '基本信息', '频率', '时间与剂量', '库存'];
 
   @override
@@ -66,6 +79,13 @@ class _AddMedScreenState extends ConsumerState<AddMedScreen> {
     if (_isEdit) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _prefill());
     }
+  }
+
+  @override
+  void dispose() {
+    _aiCtrl.dispose();
+    _tplNameCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _prefill() async {
@@ -179,6 +199,8 @@ class _AddMedScreenState extends ConsumerState<AddMedScreen> {
     switch (_steps[_step]) {
       case '选择类型':
         return _stepType();
+      case '选择方式':
+        return _stepFillMode();
       case '基本信息':
         return _stepBasic();
       case '营养成分':
@@ -233,6 +255,399 @@ class _AddMedScreenState extends ConsumerState<AddMedScreen> {
         ),
       ),
     );
+  }
+
+  // ==================== 选择方式（模板 / AI 解析 / 空白） ====================
+  Widget _stepFillMode() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _fillCard('template', '📋', '从模板', '常见配方\n一键填充'),
+            const SizedBox(width: 10),
+            _fillCard('ai', '🤖', 'AI 解析', '豆包拍图\n识别回贴'),
+            const SizedBox(width: 10),
+            _fillCard('blank', '✏️', '从空白', '手动填写\n成分'),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_fillMode == 'template') _templateBrowser(),
+        if (_fillMode == 'ai') _aiParsePanel(),
+        if (_fillMode == 'blank')
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Text('点「下一步」直接手动填写成分。',
+                style: TextStyle(fontSize: 12, color: AppColors.sub)),
+          ),
+      ],
+    );
+  }
+
+  Widget _fillCard(String mode, String emoji, String title, String desc) {
+    final sel = _fillMode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _fillMode = mode),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          decoration: BoxDecoration(
+            color: sel ? const Color(0xFFF4F8EE) : AppColors.card,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: sel ? AppColors.pri : Colors.transparent, width: 2.5),
+            boxShadow: const [
+              BoxShadow(color: Color(0x105D5040), blurRadius: 10, offset: Offset(0, 3)),
+            ],
+          ),
+          child: Column(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 26)),
+              const SizedBox(height: 6),
+              Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 3),
+              Text(desc,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 9.5, color: AppColors.sub)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _templateBrowser() {
+    final presetsAsync = ref.watch(presetsProvider);
+    final ingList = ref.watch(presetIngredientsProvider).valueOrNull ?? const <ProductPresetIngredientRow>[];
+    final nutrients = ref.watch(nutrientsProvider).valueOrNull ?? const <NutrientRow>[];
+    final byCode = {for (final n in nutrients) n.code: n};
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          onChanged: (v) => setState(() => _tplQuery = v),
+          decoration: const InputDecoration(
+            hintText: '搜索：复合维生素 / 鱼油 / 品牌…',
+            prefixIcon: Icon(Icons.search, size: 20),
+          ),
+        ),
+        const SizedBox(height: 10),
+        presetsAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Text('加载失败：$e'),
+          data: (presets) {
+            final q = _tplQuery.trim().toLowerCase();
+            final filtered = presets
+                .where((p) =>
+                    q.isEmpty ||
+                    p.name.toLowerCase().contains(q) ||
+                    (p.brand ?? '').toLowerCase().contains(q))
+                .toList();
+            if (filtered.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('没有匹配的配方？可改用「AI 解析」或「从空白创建」。',
+                    style: TextStyle(fontSize: 12, color: AppColors.sub)),
+              );
+            }
+            return Column(
+              children: [
+                for (final p in filtered)
+                  _presetRow(p, ingList.where((i) => i.presetId == p.id).toList(), byCode),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _presetRow(
+    ProductPresetRow p,
+    List<ProductPresetIngredientRow> ings,
+    Map<String, NutrientRow> byCode,
+  ) {
+    final sel = _selectedPresetId == p.id;
+    final preview = ings
+        .take(3)
+        .map((i) => '${byCode[i.nutrientCode]?.name ?? i.nutrientCode} '
+            '${_num(i.amountPerServing)}${byCode[i.nutrientCode]?.unit ?? ''}')
+        .join(' · ');
+    return GestureDetector(
+      onTap: () => _applyTemplate(p, ings),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: sel ? const Color(0xFFF4F8EE) : AppColors.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: sel ? AppColors.pri : AppColors.line, width: 2),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.fromHex(p.color),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: Text(p.emoji, style: const TextStyle(fontSize: 18)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(p.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+                      ),
+                      if (!p.isBuiltin) ...[
+                        const SizedBox(width: 6),
+                        const Text('我的',
+                            style: TextStyle(fontSize: 9, color: AppColors.acc, fontWeight: FontWeight.w800)),
+                      ],
+                      if (sel) ...[
+                        const SizedBox(width: 6),
+                        const Icon(Icons.check_circle, size: 15, color: AppColors.pri),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${ings.length}种成分${preview.isEmpty ? '' : ' · $preview'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10, color: AppColors.sub),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _applyTemplate(ProductPresetRow p, List<ProductPresetIngredientRow> ings) {
+    setState(() {
+      _selectedPresetId = p.id;
+      _name = (p.brand ?? '').isNotEmpty ? '${p.brand} ${p.name}' : p.name;
+      _form = p.form;
+      _emoji = p.emoji;
+      _color = p.color;
+      _ingredients = [
+        for (final i in ings)
+          IngredientDraft(nutrientCode: i.nutrientCode, amountPerUnit: i.amountPerServing),
+      ];
+    });
+    _snack('已套用「${p.name}」：${ings.length} 项成分，下一步可编辑');
+  }
+
+  Widget _aiParsePanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4EFE3),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Text(
+            '① 复制提示词  →  ② 打开豆包/元宝，拍照并粘贴提示词  →  ③ 复制它返回的内容  →  ④ 回到本页粘贴后解析',
+            style: TextStyle(fontSize: 11, height: 1.75, color: AppColors.sub),
+          ),
+        ),
+        const SizedBox(height: 12),
+        CapsuleButton(label: '📋 复制提示词', kind: CapsuleKind.accent, onPressed: _copyPrompt),
+        const SizedBox(height: 14),
+        TextField(
+          controller: _aiCtrl,
+          maxLines: 6,
+          minLines: 4,
+          decoration: const InputDecoration(hintText: '在此粘贴 AI 返回的 JSON…'),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            CapsuleButton(label: '粘贴', kind: CapsuleKind.ghost, onPressed: _pasteClipboard),
+            const SizedBox(width: 8),
+            CapsuleButton(
+              label: _aiBusy ? '解析中…' : '🔍 解析',
+              onPressed: _aiBusy ? null : _parseAi,
+            ),
+          ],
+        ),
+        if (_parseOutcome != null) ...[
+          const SizedBox(height: 14),
+          _parseResultView(),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _copyPrompt() async {
+    await Clipboard.setData(const ClipboardData(text: AiPrompt.text));
+    _snack('已复制提示词，去豆包拍照识别吧');
+  }
+
+  Future<void> _pasteClipboard() async {
+    final data = await Clipboard.getData('text/plain');
+    final t = data?.text ?? '';
+    if (t.isEmpty) {
+      _snack('剪贴板为空');
+      return;
+    }
+    setState(() => _aiCtrl.text = t);
+  }
+
+  Future<void> _parseAi() async {
+    final raw = _aiCtrl.text;
+    if (raw.trim().isEmpty) {
+      _snack('请先粘贴 AI 返回的内容');
+      return;
+    }
+    setState(() => _aiBusy = true);
+    try {
+      final parser = await ref.read(aiParserProvider.future);
+      final outcome = parser.parse(raw);
+      if (!mounted) return;
+      setState(() {
+        _parseOutcome = outcome;
+        _aiBusy = false;
+      });
+      if (outcome.mergedCount > 0) _snack('已合并 ${outcome.mergedCount} 项同名成分');
+    } catch (e) {
+      if (mounted) {
+        setState(() => _aiBusy = false);
+        _snack('解析失败：$e');
+      }
+    }
+  }
+
+  Widget _parseResultView() {
+    final o = _parseOutcome!;
+    if (o.error != null) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: AppColors.badLight, borderRadius: BorderRadius.circular(12)),
+        child: Text('解析失败：${o.error}',
+            style: const TextStyle(fontSize: 12, color: AppColors.bad, fontWeight: FontWeight.w700)),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '识别到 ${o.items.length} 项${o.mergedCount > 0 ? '（已合并 ${o.mergedCount} 项）' : ''}'
+          '${(o.productName ?? '').isNotEmpty ? ' · ${o.productName}' : ''}',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < o.items.length; i++) _parsedRow(i, o.items[i]),
+        const SizedBox(height: 10),
+        CapsuleButton(
+          label: '✓ 确认填入（${o.items.length}）',
+          expand: true,
+          onPressed: o.items.isEmpty ? null : _applyParsed,
+        ),
+      ],
+    );
+  }
+
+  Widget _parsedRow(int index, ParsedIngredient it) {
+    late final Color bg;
+    late final Color fg;
+    late final String tag;
+    switch (it.status) {
+      case ParseItemStatus.matched:
+        bg = AppColors.doneTag;
+        fg = AppColors.doneInk;
+        tag = '✓ 已匹配';
+        break;
+      case ParseItemStatus.needsConfirm:
+        bg = const Color(0xFFFBF0DA);
+        fg = const Color(0xFFA0742A);
+        tag = '⚠ 需确认';
+        break;
+      case ParseItemStatus.custom:
+        bg = const Color(0xFFE3ECF7);
+        fg = const Color(0xFF3B6BA5);
+        tag = '＋ 自定义';
+        break;
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+            child: Text(tag, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: fg)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${it.rawName}${it.code != null ? '  →  ${it.name}' : ''}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                if ((it.note ?? '').isNotEmpty)
+                  Text(it.note!, style: const TextStyle(fontSize: 10, color: AppColors.sub)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text('${_num(it.amount)}${it.unit}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.priDark)),
+          GestureDetector(
+            onTap: () => setState(() => _parseOutcome!.items.removeAt(index)),
+            child: const Padding(
+              padding: EdgeInsets.only(left: 8, top: 2, bottom: 2),
+              child: Icon(Icons.close, size: 15, color: AppColors.bad),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _applyParsed() async {
+    final o = _parseOutcome;
+    if (o == null || o.items.isEmpty) return;
+    final repo = ref.read(presetRepoProvider);
+    final drafts = <IngredientDraft>[];
+    var createdCustom = false;
+    for (final it in o.items) {
+      if (it.code != null) {
+        drafts.add(IngredientDraft(nutrientCode: it.code!, amountPerUnit: it.amount));
+      } else {
+        final code = await repo.ensureCustomNutrient(it.name, unit: it.unit);
+        createdCustom = true;
+        drafts.add(IngredientDraft(nutrientCode: code, amountPerUnit: it.amount));
+      }
+    }
+    if (createdCustom) ref.invalidate(nutrientsProvider);
+    if (!mounted) return;
+    setState(() {
+      _ingredients = drafts;
+      if (_name.trim().isEmpty && (o.productName ?? '').isNotEmpty) _name = o.productName!;
+    });
+    _snack('已填入 ${drafts.length} 项成分，下一步可继续编辑');
   }
 
   Widget _stepBasic() => Column(
@@ -549,6 +964,34 @@ class _AddMedScreenState extends ConsumerState<AddMedScreen> {
               child: Text('不追踪库存时，确认服药不会扣减数量',
                   style: TextStyle(fontSize: 11, color: AppColors.sub)),
             ),
+          if (!_isEdit && _type == MedType.supplement) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(18)),
+              child: Row(
+                children: [
+                  const Text('⭐ 保存为我的模板',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  Switch(
+                    value: _saveAsTemplate,
+                    activeColor: AppColors.pri,
+                    onChanged: (v) => setState(() => _saveAsTemplate = v),
+                  ),
+                ],
+              ),
+            ),
+            if (_saveAsTemplate) ...[
+              _label('模板名称'),
+              TextField(
+                controller: _tplNameCtrl,
+                decoration: InputDecoration(
+                  hintText: _name.isEmpty ? '如 Swisse 男士复合维生素' : _name,
+                ),
+              ),
+            ],
+          ],
         ],
       );
 
@@ -624,10 +1067,24 @@ class _AddMedScreenState extends ConsumerState<AddMedScreen> {
         ingredients: _type == MedType.supplement ? _ingredients : const [],
       );
       final repo = ref.read(medicationRepoProvider);
+      String? newMedId;
       if (_isEdit) {
         await repo.update(draft);
       } else {
-        await repo.create(draft);
+        newMedId = await repo.create(draft);
+      }
+      // 保存为我的模板
+      if (newMedId != null && _saveAsTemplate && _type == MedType.supplement) {
+        final dao = ref.read(daoProvider);
+        final med = await dao.getMed(newMedId);
+        final ings = await dao.ingredientsForMed(newMedId);
+        if (med != null) {
+          await ref.read(presetRepoProvider).saveAsTemplate(
+                med: med,
+                ingredients: ings,
+                name: _tplNameCtrl.text.trim().isEmpty ? _name.trim() : _tplNameCtrl.text.trim(),
+              );
+        }
       }
       await ref.read(eventControllerProvider).refreshPlan();
       if (mounted) {
