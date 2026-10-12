@@ -46,6 +46,7 @@ void main() {
         aiValue: null,
         ulValue: 50,
         emoji: '☀️',
+        refLabel: 'RNI推荐量',
       ),
       amount: 25,
       sources: [NutrientSource(name: '维生素D3', emoji: '🌞', amount: 25)],
@@ -58,7 +59,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('维生素D'), findsWidgets);
-    expect(find.textContaining('已达推荐摄入量'), findsOneWidget);
+    expect(find.textContaining('已达RNI推荐量'), findsOneWidget);
     expect(find.text('RNI'), findsOneWidget);
   });
 

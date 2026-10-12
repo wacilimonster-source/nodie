@@ -55,18 +55,22 @@ class NutrientIntake {
   final double amount;
   final List<NutrientSource> sources;
 
+  /// 是否有参考值（RNI/AI/SPL）；false = 仅记录、不做达标/上限对比
+  bool get hasReference => (nutrient.refLabel ?? '').isNotEmpty && nutrient.rniMale > 0;
+
   /// 参考摄入量：优先人群 RNI，无则 AI
   double goal(bool femaleProfile) =>
       (femaleProfile && nutrient.rniFemale != null) ? nutrient.rniFemale! : nutrient.rniMale;
 
   bool get hasAI => nutrient.aiValue != null && nutrient.aiValue! > 0;
   double? get ul => nutrient.ulValue;
+  bool get hasUl => nutrient.ulValue != null && nutrient.ulValue! > 0;
 
-  bool reached(bool femaleProfile) => amount >= goal(femaleProfile);
-  bool get overUl => ul != null && amount > ul!;
+  bool reached(bool femaleProfile) => hasReference && amount >= goal(femaleProfile);
+  bool get overUl => hasReference && hasUl && amount > nutrient.ulValue!;
   bool nearUl(bool femaleProfile) {
-    if (overUl || ul == null) return false;
-    return amount >= ul! * 0.8 && amount > goal(femaleProfile);
+    if (!hasReference || overUl || !hasUl) return false;
+    return amount >= nutrient.ulValue! * 0.8 && amount > goal(femaleProfile);
   }
 }
 

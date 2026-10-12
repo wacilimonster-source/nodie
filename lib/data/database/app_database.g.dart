@@ -2388,9 +2388,45 @@ class $NutrientsTable extends Nutrients
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('🟡'));
+  static const VerificationMeta _refLabelMeta =
+      const VerificationMeta('refLabel');
   @override
-  List<GeneratedColumn> get $columns =>
-      [code, name, unit, category, rniMale, rniFemale, aiValue, ulValue, emoji];
+  late final GeneratedColumn<String> refLabel = GeneratedColumn<String>(
+      'ref_label', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _altUnitMeta =
+      const VerificationMeta('altUnit');
+  @override
+  late final GeneratedColumn<String> altUnit = GeneratedColumn<String>(
+      'alt_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _altFactorMeta =
+      const VerificationMeta('altFactor');
+  @override
+  late final GeneratedColumn<double> altFactor = GeneratedColumn<double>(
+      'alt_factor', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+      'note', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        code,
+        name,
+        unit,
+        category,
+        rniMale,
+        rniFemale,
+        aiValue,
+        ulValue,
+        emoji,
+        refLabel,
+        altUnit,
+        altFactor,
+        note
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2447,6 +2483,22 @@ class $NutrientsTable extends Nutrients
       context.handle(
           _emojiMeta, emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta));
     }
+    if (data.containsKey('ref_label')) {
+      context.handle(_refLabelMeta,
+          refLabel.isAcceptableOrUnknown(data['ref_label']!, _refLabelMeta));
+    }
+    if (data.containsKey('alt_unit')) {
+      context.handle(_altUnitMeta,
+          altUnit.isAcceptableOrUnknown(data['alt_unit']!, _altUnitMeta));
+    }
+    if (data.containsKey('alt_factor')) {
+      context.handle(_altFactorMeta,
+          altFactor.isAcceptableOrUnknown(data['alt_factor']!, _altFactorMeta));
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+          _noteMeta, note.isAcceptableOrUnknown(data['note']!, _noteMeta));
+    }
     return context;
   }
 
@@ -2474,6 +2526,14 @@ class $NutrientsTable extends Nutrients
           .read(DriftSqlType.double, data['${effectivePrefix}ul_value']),
       emoji: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}emoji'])!,
+      refLabel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}ref_label']),
+      altUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}alt_unit']),
+      altFactor: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}alt_factor']),
+      note: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}note']),
     );
   }
 
@@ -2493,6 +2553,10 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
   final double? aiValue;
   final double? ulValue;
   final String emoji;
+  final String? refLabel;
+  final String? altUnit;
+  final double? altFactor;
+  final String? note;
   const NutrientRow(
       {required this.code,
       required this.name,
@@ -2502,7 +2566,11 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
       this.rniFemale,
       this.aiValue,
       this.ulValue,
-      required this.emoji});
+      required this.emoji,
+      this.refLabel,
+      this.altUnit,
+      this.altFactor,
+      this.note});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2521,6 +2589,18 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
       map['ul_value'] = Variable<double>(ulValue);
     }
     map['emoji'] = Variable<String>(emoji);
+    if (!nullToAbsent || refLabel != null) {
+      map['ref_label'] = Variable<String>(refLabel);
+    }
+    if (!nullToAbsent || altUnit != null) {
+      map['alt_unit'] = Variable<String>(altUnit);
+    }
+    if (!nullToAbsent || altFactor != null) {
+      map['alt_factor'] = Variable<double>(altFactor);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
     return map;
   }
 
@@ -2541,6 +2621,16 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
           ? const Value.absent()
           : Value(ulValue),
       emoji: Value(emoji),
+      refLabel: refLabel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(refLabel),
+      altUnit: altUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(altUnit),
+      altFactor: altFactor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(altFactor),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
     );
   }
 
@@ -2557,6 +2647,10 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
       aiValue: serializer.fromJson<double?>(json['aiValue']),
       ulValue: serializer.fromJson<double?>(json['ulValue']),
       emoji: serializer.fromJson<String>(json['emoji']),
+      refLabel: serializer.fromJson<String?>(json['refLabel']),
+      altUnit: serializer.fromJson<String?>(json['altUnit']),
+      altFactor: serializer.fromJson<double?>(json['altFactor']),
+      note: serializer.fromJson<String?>(json['note']),
     );
   }
   @override
@@ -2572,6 +2666,10 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
       'aiValue': serializer.toJson<double?>(aiValue),
       'ulValue': serializer.toJson<double?>(ulValue),
       'emoji': serializer.toJson<String>(emoji),
+      'refLabel': serializer.toJson<String?>(refLabel),
+      'altUnit': serializer.toJson<String?>(altUnit),
+      'altFactor': serializer.toJson<double?>(altFactor),
+      'note': serializer.toJson<String?>(note),
     };
   }
 
@@ -2584,7 +2682,11 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
           Value<double?> rniFemale = const Value.absent(),
           Value<double?> aiValue = const Value.absent(),
           Value<double?> ulValue = const Value.absent(),
-          String? emoji}) =>
+          String? emoji,
+          Value<String?> refLabel = const Value.absent(),
+          Value<String?> altUnit = const Value.absent(),
+          Value<double?> altFactor = const Value.absent(),
+          Value<String?> note = const Value.absent()}) =>
       NutrientRow(
         code: code ?? this.code,
         name: name ?? this.name,
@@ -2595,6 +2697,10 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
         aiValue: aiValue.present ? aiValue.value : this.aiValue,
         ulValue: ulValue.present ? ulValue.value : this.ulValue,
         emoji: emoji ?? this.emoji,
+        refLabel: refLabel.present ? refLabel.value : this.refLabel,
+        altUnit: altUnit.present ? altUnit.value : this.altUnit,
+        altFactor: altFactor.present ? altFactor.value : this.altFactor,
+        note: note.present ? note.value : this.note,
       );
   NutrientRow copyWithCompanion(NutrientsCompanion data) {
     return NutrientRow(
@@ -2607,6 +2713,10 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
       aiValue: data.aiValue.present ? data.aiValue.value : this.aiValue,
       ulValue: data.ulValue.present ? data.ulValue.value : this.ulValue,
       emoji: data.emoji.present ? data.emoji.value : this.emoji,
+      refLabel: data.refLabel.present ? data.refLabel.value : this.refLabel,
+      altUnit: data.altUnit.present ? data.altUnit.value : this.altUnit,
+      altFactor: data.altFactor.present ? data.altFactor.value : this.altFactor,
+      note: data.note.present ? data.note.value : this.note,
     );
   }
 
@@ -2621,14 +2731,18 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
           ..write('rniFemale: $rniFemale, ')
           ..write('aiValue: $aiValue, ')
           ..write('ulValue: $ulValue, ')
-          ..write('emoji: $emoji')
+          ..write('emoji: $emoji, ')
+          ..write('refLabel: $refLabel, ')
+          ..write('altUnit: $altUnit, ')
+          ..write('altFactor: $altFactor, ')
+          ..write('note: $note')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      code, name, unit, category, rniMale, rniFemale, aiValue, ulValue, emoji);
+  int get hashCode => Object.hash(code, name, unit, category, rniMale,
+      rniFemale, aiValue, ulValue, emoji, refLabel, altUnit, altFactor, note);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2641,7 +2755,11 @@ class NutrientRow extends DataClass implements Insertable<NutrientRow> {
           other.rniFemale == this.rniFemale &&
           other.aiValue == this.aiValue &&
           other.ulValue == this.ulValue &&
-          other.emoji == this.emoji);
+          other.emoji == this.emoji &&
+          other.refLabel == this.refLabel &&
+          other.altUnit == this.altUnit &&
+          other.altFactor == this.altFactor &&
+          other.note == this.note);
 }
 
 class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
@@ -2654,6 +2772,10 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
   final Value<double?> aiValue;
   final Value<double?> ulValue;
   final Value<String> emoji;
+  final Value<String?> refLabel;
+  final Value<String?> altUnit;
+  final Value<double?> altFactor;
+  final Value<String?> note;
   final Value<int> rowid;
   const NutrientsCompanion({
     this.code = const Value.absent(),
@@ -2665,6 +2787,10 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
     this.aiValue = const Value.absent(),
     this.ulValue = const Value.absent(),
     this.emoji = const Value.absent(),
+    this.refLabel = const Value.absent(),
+    this.altUnit = const Value.absent(),
+    this.altFactor = const Value.absent(),
+    this.note = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   NutrientsCompanion.insert({
@@ -2677,6 +2803,10 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
     this.aiValue = const Value.absent(),
     this.ulValue = const Value.absent(),
     this.emoji = const Value.absent(),
+    this.refLabel = const Value.absent(),
+    this.altUnit = const Value.absent(),
+    this.altFactor = const Value.absent(),
+    this.note = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : code = Value(code),
         name = Value(name),
@@ -2693,6 +2823,10 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
     Expression<double>? aiValue,
     Expression<double>? ulValue,
     Expression<String>? emoji,
+    Expression<String>? refLabel,
+    Expression<String>? altUnit,
+    Expression<double>? altFactor,
+    Expression<String>? note,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2705,6 +2839,10 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
       if (aiValue != null) 'ai_value': aiValue,
       if (ulValue != null) 'ul_value': ulValue,
       if (emoji != null) 'emoji': emoji,
+      if (refLabel != null) 'ref_label': refLabel,
+      if (altUnit != null) 'alt_unit': altUnit,
+      if (altFactor != null) 'alt_factor': altFactor,
+      if (note != null) 'note': note,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2719,6 +2857,10 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
       Value<double?>? aiValue,
       Value<double?>? ulValue,
       Value<String>? emoji,
+      Value<String?>? refLabel,
+      Value<String?>? altUnit,
+      Value<double?>? altFactor,
+      Value<String?>? note,
       Value<int>? rowid}) {
     return NutrientsCompanion(
       code: code ?? this.code,
@@ -2730,6 +2872,10 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
       aiValue: aiValue ?? this.aiValue,
       ulValue: ulValue ?? this.ulValue,
       emoji: emoji ?? this.emoji,
+      refLabel: refLabel ?? this.refLabel,
+      altUnit: altUnit ?? this.altUnit,
+      altFactor: altFactor ?? this.altFactor,
+      note: note ?? this.note,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2764,6 +2910,18 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
     if (emoji.present) {
       map['emoji'] = Variable<String>(emoji.value);
     }
+    if (refLabel.present) {
+      map['ref_label'] = Variable<String>(refLabel.value);
+    }
+    if (altUnit.present) {
+      map['alt_unit'] = Variable<String>(altUnit.value);
+    }
+    if (altFactor.present) {
+      map['alt_factor'] = Variable<double>(altFactor.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2782,6 +2940,10 @@ class NutrientsCompanion extends UpdateCompanion<NutrientRow> {
           ..write('aiValue: $aiValue, ')
           ..write('ulValue: $ulValue, ')
           ..write('emoji: $emoji, ')
+          ..write('refLabel: $refLabel, ')
+          ..write('altUnit: $altUnit, ')
+          ..write('altFactor: $altFactor, ')
+          ..write('note: $note, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3835,6 +3997,10 @@ typedef $$NutrientsTableCreateCompanionBuilder = NutrientsCompanion Function({
   Value<double?> aiValue,
   Value<double?> ulValue,
   Value<String> emoji,
+  Value<String?> refLabel,
+  Value<String?> altUnit,
+  Value<double?> altFactor,
+  Value<String?> note,
   Value<int> rowid,
 });
 typedef $$NutrientsTableUpdateCompanionBuilder = NutrientsCompanion Function({
@@ -3847,6 +4013,10 @@ typedef $$NutrientsTableUpdateCompanionBuilder = NutrientsCompanion Function({
   Value<double?> aiValue,
   Value<double?> ulValue,
   Value<String> emoji,
+  Value<String?> refLabel,
+  Value<String?> altUnit,
+  Value<double?> altFactor,
+  Value<String?> note,
   Value<int> rowid,
 });
 
@@ -3895,6 +4065,26 @@ class $$NutrientsTableFilterComposer
 
   ColumnFilters<String> get emoji => $state.composableBuilder(
       column: $state.table.emoji,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get refLabel => $state.composableBuilder(
+      column: $state.table.refLabel,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get altUnit => $state.composableBuilder(
+      column: $state.table.altUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get altFactor => $state.composableBuilder(
+      column: $state.table.altFactor,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get note => $state.composableBuilder(
+      column: $state.table.note,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 }
@@ -3946,6 +4136,26 @@ class $$NutrientsTableOrderingComposer
       column: $state.table.emoji,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get refLabel => $state.composableBuilder(
+      column: $state.table.refLabel,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get altUnit => $state.composableBuilder(
+      column: $state.table.altUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get altFactor => $state.composableBuilder(
+      column: $state.table.altFactor,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get note => $state.composableBuilder(
+      column: $state.table.note,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
 class $$NutrientsTableTableManager extends RootTableManager<
@@ -3977,6 +4187,10 @@ class $$NutrientsTableTableManager extends RootTableManager<
             Value<double?> aiValue = const Value.absent(),
             Value<double?> ulValue = const Value.absent(),
             Value<String> emoji = const Value.absent(),
+            Value<String?> refLabel = const Value.absent(),
+            Value<String?> altUnit = const Value.absent(),
+            Value<double?> altFactor = const Value.absent(),
+            Value<String?> note = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               NutrientsCompanion(
@@ -3989,6 +4203,10 @@ class $$NutrientsTableTableManager extends RootTableManager<
             aiValue: aiValue,
             ulValue: ulValue,
             emoji: emoji,
+            refLabel: refLabel,
+            altUnit: altUnit,
+            altFactor: altFactor,
+            note: note,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -4001,6 +4219,10 @@ class $$NutrientsTableTableManager extends RootTableManager<
             Value<double?> aiValue = const Value.absent(),
             Value<double?> ulValue = const Value.absent(),
             Value<String> emoji = const Value.absent(),
+            Value<String?> refLabel = const Value.absent(),
+            Value<String?> altUnit = const Value.absent(),
+            Value<double?> altFactor = const Value.absent(),
+            Value<String?> note = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               NutrientsCompanion.insert(
@@ -4013,6 +4235,10 @@ class $$NutrientsTableTableManager extends RootTableManager<
             aiValue: aiValue,
             ulValue: ulValue,
             emoji: emoji,
+            refLabel: refLabel,
+            altUnit: altUnit,
+            altFactor: altFactor,
+            note: note,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

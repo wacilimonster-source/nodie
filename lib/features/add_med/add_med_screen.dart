@@ -803,7 +803,13 @@ class _IngredientsEditor extends StatefulWidget {
 
 class _IngredientsEditorState extends State<_IngredientsEditor> {
   late String _sel = widget.nutrients.isNotEmpty ? widget.nutrients.first.code : '';
+  late String _unit = _unitOf(_sel);
   final TextEditingController _amt = TextEditingController();
+
+  NutrientRow? _byCode(String code) =>
+      widget.nutrients.where((n) => n.code == code).firstOrNull;
+
+  String _unitOf(String code) => _byCode(code)?.unit ?? '';
 
   @override
   void dispose() {
@@ -855,33 +861,36 @@ class _IngredientsEditorState extends State<_IngredientsEditor> {
             ),
           ),
         const SizedBox(height: 8),
+        // 成分选择（下拉较长，含 Emoji 便于辨认）
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.line, width: 2),
+          ),
+          child: DropdownButton<String>(
+            value: _sel.isEmpty ? null : _sel,
+            isExpanded: true,
+            underline: const SizedBox.shrink(),
+            items: widget.nutrients
+                .map((n) => DropdownMenuItem(
+                      value: n.code,
+                      child: Text('${n.emoji} ${n.name}（${n.unit}）',
+                          style: const TextStyle(fontSize: 12)),
+                    ))
+                .toList(),
+            onChanged: (v) => setState(() {
+              _sel = v ?? _sel;
+              _unit = _unitOf(_sel);
+            }),
+          ),
+        ),
+        const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.line, width: 2),
-                ),
-                child: DropdownButton<String>(
-                  value: _sel.isEmpty ? null : _sel,
-                  isExpanded: true,
-                  underline: const SizedBox.shrink(),
-                  items: widget.nutrients
-                      .map((n) => DropdownMenuItem(
-                            value: n.code,
-                            child: Text('${n.name}（${n.unit}）', style: const TextStyle(fontSize: 12)),
-                          ))
-                      .toList(),
-                  onChanged: (v) => setState(() => _sel = v ?? _sel),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
             SizedBox(
-              width: 80,
+              width: 96,
               child: TextField(
                 controller: _amt,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -889,6 +898,34 @@ class _IngredientsEditorState extends State<_IngredientsEditor> {
               ),
             ),
             const SizedBox(width: 8),
+            if (_byCode(_sel)?.altUnit != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.line, width: 2),
+                ),
+                child: DropdownButton<String>(
+                  value: _unit,
+                  underline: const SizedBox.shrink(),
+                  items: [_byCode(_sel)!.unit, _byCode(_sel)!.altUnit!]
+                      .map((u) => DropdownMenuItem(
+                            value: u,
+                            child: Text(u, style: const TextStyle(fontSize: 12)),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() => _unit = v ?? _unit),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(_byCode(_sel)?.unit ?? '',
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.sub)),
+              ),
+            const Spacer(),
             CapsuleButton(label: '添加', onPressed: _add),
           ],
         ),
@@ -900,8 +937,9 @@ class _IngredientsEditorState extends State<_IngredientsEditor> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: const Text(
-            '💡 查看产品包装上的「营养成分表 / 配料表」逐项填写。\n'
-            '例如某品牌维生素D3标注「每粒含维生素D 25μg（1000IU）」，即选「维生素D」填 25。\n'
+            '💡 按包装「营养成分表 / 配料表」逐项填写。\n'
+            '维生素D/A/E 可直接按 IU 填写（如维生素D 1000IU 会自动换算为 25μg）。\n'
+            '「其他膳食成分 / 其他成分」为仅记录，不与 DRIs 对比。\n'
             '不录入成分也可使用，只是不参与营养摄入统计。',
             style: TextStyle(fontSize: 10.5, height: 1.7, color: AppColors.sub),
           ),
@@ -911,10 +949,15 @@ class _IngredientsEditorState extends State<_IngredientsEditor> {
   }
 
   void _add() {
+    final cur = _byCode(_sel);
     final amt = double.tryParse(_amt.text);
-    if (amt == null || amt <= 0) return;
+    if (cur == null || amt == null || amt <= 0) return;
+    // 若按 altUnit（如 IU）填写，换算为规范单位
+    final canonical = (cur.altUnit != null && _unit == cur.altUnit && cur.altFactor != null)
+        ? amt * cur.altFactor!
+        : amt;
     final list = [...widget.drafts]..removeWhere((x) => x.nutrientCode == _sel);
-    list.add(IngredientDraft(nutrientCode: _sel, amountPerUnit: amt));
+    list.add(IngredientDraft(nutrientCode: _sel, amountPerUnit: canonical));
     widget.onChanged(list);
     _amt.clear();
   }
