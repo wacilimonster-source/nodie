@@ -1,0 +1,12 @@
+{
+  "version": "1.2.0",
+  "tag": "v1.2.0",
+  "notes": "检查更新改为国内可直连：元数据走 jsDelivr，下载自动走加速镜像",
+  "apk": "https://github.com/wacilimonster-source/nodie/releases/download/v1.2.0/app-release.apk",
+  "mirrors": [
+    "https://ghproxy.net/https://github.com/wacilimonster-source/nodie/releases/download/v1.2.0/app-release.apk",
+    "https://ghfast.top/https://github.com/wacilimonster-source/nodie/releases/download/v1.2.0/app-release.apk",
+    "https://gh-proxy.com/https://github.com/wacilimonster-source/nodie/releases/download/v1.2.0/app-release.apk"
+  ],
+  "htmlUrl": "https://github.com/wacilimonster-source/nodie/releases/tag/v1.2.0"
+}

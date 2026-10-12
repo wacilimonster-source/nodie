@@ -368,7 +368,7 @@ class SettingsScreen extends ConsumerWidget {
 
       if (latest == null) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('仓库暂无发布版本，请先在 GitHub 创建 Release')),
+          const SnackBar(content: Text('检查更新失败或暂无发布版本，请检查网络后重试')),
         );
         return;
       }
@@ -402,7 +402,7 @@ class SettingsScreen extends ConsumerWidget {
               onPressed: () => Navigator.pop(ctx, 'browser'),
               child: const Text('浏览器打开'),
             ),
-            if (latest.apkUrl != null)
+            if (latest.apkUrls.isNotEmpty)
               TextButton(
                 onPressed: () => Navigator.pop(ctx, 'download'),
                 child: const Text('下载更新', style: TextStyle(fontWeight: FontWeight.w800)),
@@ -413,8 +413,8 @@ class SettingsScreen extends ConsumerWidget {
 
       if (action == 'browser') {
         await svc.openReleasePage(latest.htmlUrl);
-      } else if (action == 'download' && latest.apkUrl != null && context.mounted) {
-        await _downloadAndInstall(context, svc, latest.apkUrl!);
+      } else if (action == 'download' && latest.apkUrls.isNotEmpty && context.mounted) {
+        await _downloadAndInstall(context, svc, latest.apkUrls);
       }
     } catch (e) {
       closeLoading();
@@ -425,7 +425,7 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _downloadAndInstall(
     BuildContext context,
     UpdateService svc,
-    String url,
+    List<String> urls,
   ) async {
     final nav = Navigator.of(context, rootNavigator: true);
     final messenger = ScaffoldMessenger.of(context);
@@ -455,7 +455,7 @@ class SettingsScreen extends ConsumerWidget {
     );
     try {
       final file = await svc.downloadApk(
-        url,
+        urls,
         onProgress: (r, t) {
           if (t > 0) progress.value = r / t;
         },

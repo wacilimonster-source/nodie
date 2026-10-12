@@ -52,3 +52,32 @@ jobs:
         with:
           files: build/app/outputs/flutter-apk/app-release.apk
           generate_release_notes: true
+
+      - name: Update version.json (国内更新源)
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          BASE="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/app-release.apk"
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+          cat > version.json <<EOF
+          {
+            "version": "${VERSION}",
+            "tag": "${GITHUB_REF_NAME}",
+            "notes": "",
+            "apk": "${BASE}",
+            "mirrors": [
+              "https://ghproxy.net/${BASE}",
+              "https://ghfast.top/${BASE}",
+              "https://gh-proxy.com/${BASE}"
+            ],
+            "htmlUrl": "https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}"
+          }
+          EOF
+          git add version.json
+          git -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" \
+            commit -m "chore(release): version.json -> ${GITHUB_REF_NAME}" || echo "no changes to commit"
+          git push origin main || echo "push skipped"
+
+      - name: Purge jsDelivr cache
+        run: curl -s "https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@main/version.json" || true
